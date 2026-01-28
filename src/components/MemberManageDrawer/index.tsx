@@ -13,7 +13,8 @@ import {
   EllipsisOutlined,
 } from '@ant-design/icons';
 import { useAppStore } from '../../store';
-import { PermissionType } from '../../types';
+import { PermissionType, FolderMember } from '../../types';
+import AddMemberModal from '../AddMemberModal';
 import styles from './index.module.less';
 
 /**
@@ -21,8 +22,9 @@ import styles from './index.module.less';
  */
 const permissionOptions = [
   { value: 'private', label: '仅我可查看' },
-  { value: 'viewable', label: '获得链接的人可查看' },
-  { value: 'editable', label: '获得链接的人可编辑' },
+  { value: 'specified', label: '指定人可查看' },
+  { value: 'viewable', label: '所有人可查看' },
+  { value: 'editable', label: '所有人可编辑' },
 ];
 
 const MemberManageDrawer: React.FC = () => {
@@ -30,9 +32,12 @@ const MemberManageDrawer: React.FC = () => {
     activeModal,
     setActiveModal,
     folderMembers,
+    addFolderMember,
     folderPermission,
     setFolderPermission,
     currentUser,
+    addMemberModalOpen,
+    setAddMemberModalOpen,
   } = useAppStore();
 
   // 判断抽屉是否打开
@@ -60,10 +65,30 @@ const MemberManageDrawer: React.FC = () => {
   };
 
   /**
-   * 添加成员
+   * 添加成员 - 打开添加成员弹窗
    */
   const handleAddMember = () => {
-    console.log('添加成员');
+    setAddMemberModalOpen(true);
+  };
+
+  /**
+   * 处理添加成员确认
+   */
+  const handleAddMemberConfirm = (selectedFriends: { id: string; name: string }[]) => {
+    selectedFriends.forEach((friend, index) => {
+      const newMember: FolderMember = {
+        id: `member_${Date.now()}_${index}`,
+        userId: friend.id,
+        userName: friend.name,
+        role: 'viewer',
+      };
+      addFolderMember(newMember);
+    });
+    // 添加成员后，将权限改为所有人可查看
+    if (selectedFriends.length > 0) {
+      setFolderPermission('viewable');
+    }
+    setAddMemberModalOpen(false);
   };
 
   /**
@@ -86,80 +111,88 @@ const MemberManageDrawer: React.FC = () => {
   };
 
   return (
-    <div className={`${styles.memberDrawer} ${isOpen ? styles.visible : ''}`}>
-      {/* 抽屉头部 */}
-      <div className={styles.drawerHeader}>
-        <span className={styles.drawerTitle}>文件夹成员管理</span>
-        <CloseOutlined className={styles.closeIcon} onClick={handleClose} />
-      </div>
-
-      {/* 抽屉内容 */}
-      <div className={styles.drawerBody}>
-        {/* ==================== 权限设置区域 ==================== */}
-        <div className={styles.section}>
-          <div className={styles.sectionLabel}>文件夹权限</div>
-          <div className={styles.permissionRow}>
-            {/* 权限下拉选择 */}
-            <Select
-              value={folderPermission}
-              onChange={handlePermissionChange}
-              options={permissionOptions}
-              className={styles.permissionSelect}
-              suffixIcon={null}
-              popupMatchSelectWidth={false}
-            />
-            {/* 权限设置按钮 */}
-            <Button onClick={handleOpenPermissionSettings}>权限设置</Button>
-          </div>
+    <>
+      <div className={`${styles.memberDrawer} ${isOpen ? styles.visible : ''}`}>
+        {/* 抽屉头部 */}
+        <div className={styles.drawerHeader}>
+          <span className={styles.drawerTitle}>文件夹成员管理</span>
+          <CloseOutlined className={styles.closeIcon} onClick={handleClose} />
         </div>
 
-        {/* ==================== 成员标题区域 ==================== */}
-        <div className={styles.memberHeader}>
-          <div className={styles.memberTitle}>
-            <span>文件夹成员·{folderMembers.length}</span>
-            <Tooltip title="成员信息说明">
-              <InfoCircleOutlined className={styles.infoIcon} />
-            </Tooltip>
-          </div>
-          <EllipsisOutlined className={styles.moreIcon} />
-        </div>
-
-        {/* ==================== 操作按钮区域 ==================== */}
-        <div className={styles.actionButtons}>
-          <Button icon={<UserAddOutlined />} onClick={handleAddMember}>
-            添加成员
-          </Button>
-          <Button icon={<ExportOutlined />} onClick={handleInviteMember}>
-            邀请成员加入
-          </Button>
-        </div>
-
-        {/* ==================== 成员列表区域 ==================== */}
-        <div className={styles.memberList}>
-          {folderMembers.map((member) => (
-            <div key={member.id} className={styles.memberItem}>
-              <div className={styles.memberInfo}>
-                {/* 成员头像 */}
-                <Avatar
-                  size={32}
-                  className={styles.memberAvatar}
-                  src={member.avatar}
-                >
-                  {member.userName.charAt(0).toUpperCase()}
-                </Avatar>
-                {/* 成员名称 */}
-                <span className={styles.memberName}>
-                  {member.userName}
-                  {member.userId === currentUser?.id && ' (我)'}
-                </span>
-              </div>
-              {/* 成员角色 */}
-              <span className={styles.memberRole}>{getRoleText(member.role)}</span>
+        {/* 抽屉内容 */}
+        <div className={styles.drawerBody}>
+          {/* ==================== 权限设置区域 ==================== */}
+          <div className={styles.section}>
+            <div className={styles.sectionLabel}>文件夹权限</div>
+            <div className={styles.permissionRow}>
+              {/* 权限下拉选择 */}
+              <Select
+                value={folderPermission}
+                onChange={handlePermissionChange}
+                options={permissionOptions}
+                className={styles.permissionSelect}
+                popupMatchSelectWidth={false}
+              />
+              {/* 权限设置按钮 */}
+              <Button onClick={handleOpenPermissionSettings}>权限设置</Button>
             </div>
-          ))}
+          </div>
+
+          {/* ==================== 成员标题区域 ==================== */}
+          <div className={styles.memberHeader}>
+            <div className={styles.memberTitle}>
+              <span>文件夹成员·{folderMembers.length}</span>
+              <Tooltip title="成员信息说明">
+                <InfoCircleOutlined className={styles.infoIcon} />
+              </Tooltip>
+            </div>
+            <EllipsisOutlined className={styles.moreIcon} />
+          </div>
+
+          {/* ==================== 操作按钮区域 ==================== */}
+          <div className={styles.actionButtons}>
+            <Button icon={<UserAddOutlined />} onClick={handleAddMember}>
+              添加成员
+            </Button>
+            <Button icon={<ExportOutlined />} onClick={handleInviteMember}>
+              邀请成员加入
+            </Button>
+          </div>
+
+          {/* ==================== 成员列表区域 ==================== */}
+          <div className={styles.memberList}>
+            {folderMembers.map((member) => (
+              <div key={member.id} className={styles.memberItem}>
+                <div className={styles.memberInfo}>
+                  {/* 成员头像 */}
+                  <Avatar
+                    size={32}
+                    className={styles.memberAvatar}
+                    src={member.avatar}
+                  >
+                    {member.userName.charAt(0).toUpperCase()}
+                  </Avatar>
+                  {/* 成员名称 */}
+                  <span className={styles.memberName}>
+                    {member.userName}
+                    {member.userId === currentUser?.id && ' (我)'}
+                  </span>
+                </div>
+                {/* 成员角色 */}
+                <span className={styles.memberRole}>{getRoleText(member.role)}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* 添加成员弹窗 */}
+      <AddMemberModal
+        open={addMemberModalOpen}
+        onClose={() => setAddMemberModalOpen(false)}
+        onConfirm={handleAddMemberConfirm}
+      />
+    </>
   );
 };
 

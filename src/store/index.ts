@@ -29,6 +29,9 @@ interface AppState {
   activeModal: ModalType;                 // 当前激活的弹窗
   setActiveModal: (modal: ModalType) => void;
 
+  addMemberModalOpen: boolean;            // 添加成员弹窗是否打开
+  setAddMemberModalOpen: (open: boolean) => void;
+
   // ==================== 侧边栏相关状态 ====================
   sidebarCollapsed: boolean;              // 侧边栏是否折叠
   setSidebarCollapsed: (collapsed: boolean) => void;
@@ -39,6 +42,7 @@ interface AppState {
   // ==================== 成员管理相关状态 ====================
   folderMembers: FolderMember[];          // 文件夹成员列表
   setFolderMembers: (members: FolderMember[]) => void;
+  addFolderMember: (member: FolderMember) => void;
 
   folderPermission: PermissionType;       // 文件夹权限
   setFolderPermission: (permission: PermissionType) => void;
@@ -77,6 +81,9 @@ export const useAppStore = create<AppState>((set) => ({
   activeModal: null,
   setActiveModal: (modal) => set({ activeModal: modal }),
 
+  addMemberModalOpen: false,
+  setAddMemberModalOpen: (open) => set({ addMemberModalOpen: open }),
+
   // ==================== 侧边栏相关 ====================
   sidebarCollapsed: false,
   setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
@@ -94,6 +101,9 @@ export const useAppStore = create<AppState>((set) => ({
     },
   ],
   setFolderMembers: (members) => set({ folderMembers: members }),
+  addFolderMember: (member) => set((state) => ({
+    folderMembers: [...state.folderMembers, member],
+  })),
 
   folderPermission: 'private',
   setFolderPermission: (permission) => set({ folderPermission: permission }),

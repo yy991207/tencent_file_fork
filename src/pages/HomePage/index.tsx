@@ -187,6 +187,10 @@ const HomePage: React.FC = () => {
   const [folderPath, setFolderPath] = useState<string[]>(['clawd']);
   // 当前选中的文档（用于显示文档详情）
   const [selectedDocument, setSelectedDocument] = useState<FileItem | null>(null);
+  // 置顶模式（显示三栏布局：资料面板 + 文档编辑 + 问问空间）
+  const [pinnedMode, setPinnedMode] = useState(false);
+  // 置顶模式下选中的文档
+  const [pinnedDocument, setPinnedDocument] = useState<FileItem | null>(null);
 
   // 获取当前文件夹数据
   const currentFolderName = folderPath[folderPath.length - 1];
@@ -330,11 +334,148 @@ const HomePage: React.FC = () => {
         setFolderPath(['clawd', '.git']);
       } else if (selectedKey === 'hooks') {
         setFolderPath(['clawd', '.git', 'hooks']);
+      } else if (['HEARTBEAT', 'USER', 'TOOLS'].includes(selectedKey)) {
+        // 选择文档时，在置顶模式下打开文档
+        if (pinnedMode) {
+          const doc = mockFolderData['clawd'].files.find(f => f.name === selectedKey);
+          if (doc) {
+            setPinnedDocument(doc);
+          }
+        }
       }
       // 选择后关闭目录树
       setTreeVisible(false);
     }
   };
+
+  /**
+   * 处理置顶按钮点击
+   * 进入置顶模式，显示三栏布局
+   */
+  const handlePinClick = () => {
+    // 默认打开 HEARTBEAT 文档
+    const heartbeatDoc = mockFolderData['clawd'].files.find(f => f.name === 'HEARTBEAT');
+    setPinnedDocument(heartbeatDoc || null);
+    setPinnedMode(true);
+  };
+
+  /**
+   * 关闭置顶模式
+   */
+  const handleClosePinnedMode = () => {
+    setPinnedMode(false);
+    setPinnedDocument(null);
+  };
+
+  /**
+   * 置顶模式下选择目录树节点
+   */
+  const handlePinnedTreeSelect = (selectedKeys: React.Key[]) => {
+    if (selectedKeys.length > 0) {
+      const selectedKey = selectedKeys[0] as string;
+      // 如果选择的是文档
+      if (['HEARTBEAT', 'USER', 'TOOLS'].includes(selectedKey)) {
+        const doc = mockFolderData['clawd'].files.find(f => f.name === selectedKey);
+        if (doc) {
+          setPinnedDocument(doc);
+        }
+      } else if (selectedKey === '.git') {
+        // 点击 .git 文件夹，更新文件夹路径
+        setFolderPath(['clawd', '.git']);
+      } else if (selectedKey === 'hooks') {
+        setFolderPath(['clawd', '.git', 'hooks']);
+      } else if (selectedKey === 'clawd') {
+        setFolderPath(['clawd']);
+      }
+    }
+  };
+
+  // 如果是置顶模式，渲染三栏布局
+  if (pinnedMode) {
+    return (
+      <div className={styles.homePage}>
+        {/* ==================== 置顶模式：三栏布局 ==================== */}
+
+        {/* 左侧资料面板 */}
+        <div className={styles.pinnedLeftPanel}>
+          {/* 头部 */}
+          <div className={styles.pinnedPanelHeader}>
+            <span className={styles.pinnedPanelTitle}>资料</span>
+            <PushpinOutlined className={styles.pinnedPinIcon} />
+          </div>
+
+          {/* 添加资料按钮 */}
+          <Button
+            className={styles.pinnedAddBtn}
+            icon={<PlusOutlined />}
+            block
+          >
+            添加资料
+          </Button>
+
+          {/* 已选择提示 */}
+          <div className={styles.pinnedSelectedInfo}>
+            <span>已选 1 项目</span>
+            <Space size={12}>
+              <FileTextOutlined />
+              <FileTextOutlined />
+              <FolderOutlined />
+            </Space>
+          </div>
+
+          {/* 目录树 */}
+          <div className={styles.pinnedTreeContent}>
+            <Tree
+              showIcon
+              defaultExpandAll
+              treeData={directoryTreeData}
+              onSelect={handlePinnedTreeSelect}
+              className={styles.pinnedTree}
+            />
+          </div>
+        </div>
+
+        {/* 中间文档编辑面板 */}
+        <div className={styles.pinnedDocPanel}>
+          {/* 文档顶部栏 */}
+          <div className={styles.pinnedDocHeader}>
+            <span className={styles.pinnedDocTitle}>
+              {pinnedDocument?.name || 'HEARTBEAT'}
+            </span>
+            <div className={styles.pinnedDocIcons}>
+              <TeamOutlined className={styles.pinnedDocIcon} onClick={handleOpenMemberManage} />
+              <ExportOutlined className={styles.pinnedDocIcon} />
+              <CloseOutlined className={styles.pinnedDocIcon} onClick={handleClosePinnedMode} />
+            </div>
+          </div>
+
+          {/* 工具栏 */}
+          <div className={styles.pinnedToolbar}>
+            <span className={styles.toolbarItem}>Aa</span>
+            <span className={styles.toolbarItem}>正文</span>
+            <span className={styles.toolbarDivider}>|</span>
+            <span className={styles.toolbarItem}>B</span>
+            <span className={styles.toolbarItem}>I</span>
+            <span className={styles.toolbarItem}>U</span>
+            <span className={styles.toolbarItem}>S</span>
+          </div>
+
+          {/* 文档内容区域 */}
+          <div className={styles.pinnedDocContent}>
+            <h1 className={styles.docTitle}>HEARTBEAT.</h1>
+            <p className={styles.docSubtitle}>Keep the heart beating, and let's stay connected!</p>
+            <p className={styles.docText}>Add tasks below with the + button</p>
+          </div>
+        </div>
+
+        {/* 右侧问问空间 */}
+        <RightContent />
+
+        {/* 成员管理抽屉 */}
+        <MemberManageDrawer />
+      </div>
+    );
+  }
 
   return (
     <div className={styles.homePage}>
@@ -359,7 +500,7 @@ const HomePage: React.FC = () => {
           {/* ==================== 面板头部（收起时显示"资料"，展开时隐藏） ==================== */}
           <div className={`${styles.panelHeader} ${expanded ? styles.hidden : ''}`}>
             <span className={styles.panelTitle}>资料</span>
-            <PushpinOutlined className={styles.pinIcon} />
+            <PushpinOutlined className={styles.pinIcon} onClick={handlePinClick} />
           </div>
 
           {/* ==================== 主内容区 ==================== */}

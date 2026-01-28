@@ -540,3 +540,175 @@
     }
   }
 }
+
+/* ==================== 置顶模式样式 ==================== */
+
+/* 置顶左侧资料面板 */
+.pinnedLeftPanel {
+  display: flex;
+  flex-direction: column;
+  width: 280px;
+  height: 100%;
+  background-color: var(--bg-color-white);
+  border-right: 1px solid var(--border-color-dark);
+}
+
+.pinnedPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color-light);
+}
+
+.pinnedPanelTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-color-primary);
+}
+
+.pinnedPinIcon {
+  font-size: 18px;
+  color: var(--primary-color);
+  cursor: pointer;
+}
+
+.pinnedAddBtn {
+  margin: 16px;
+  height: 36px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+
+  &:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+  }
+}
+
+.pinnedSelectedInfo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: var(--text-color-secondary);
+}
+
+.pinnedTreeContent {
+  flex: 1;
+  padding: 8px;
+  overflow-y: auto;
+}
+
+.pinnedTree {
+  :global {
+    .ant-tree-treenode {
+      padding: 4px 0;
+    }
+
+    .ant-tree-node-content-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ant-tree-title {
+      font-size: 13px;
+    }
+
+    .ant-tree-node-selected {
+      background-color: #E8F4FD !important;
+      border-radius: 4px;
+    }
+  }
+}
+
+/* 置顶中间文档面板 */
+.pinnedDocPanel {
+  display: flex;
+  flex-direction: column;
+  width: 380px;
+  height: 100%;
+  background-color: var(--bg-color-white);
+  border-right: 1px solid var(--border-color-dark);
+}
+
+.pinnedDocHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 2px solid var(--primary-color);
+}
+
+.pinnedDocTitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-color-primary);
+}
+
+.pinnedDocIcons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pinnedDocIcon {
+  font-size: 18px;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--primary-color);
+  }
+}
+
+.pinnedToolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color-light);
+  font-size: 14px;
+  color: var(--text-color-secondary);
+}
+
+.toolbarItem {
+  padding: 4px 8px;
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--bg-color-light);
+    border-radius: 4px;
+  }
+}
+
+.toolbarDivider {
+  color: var(--border-color);
+}
+
+.pinnedDocContent {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.docTitle {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-color-primary);
+}
+
+.docSubtitle {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  color: var(--text-color-secondary);
+  font-style: italic;
+}
+
+.docText {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-color-tertiary);
+}

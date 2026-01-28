@@ -69,7 +69,7 @@ export interface FolderMember {
 /**
  * 权限设置类型
  */
-export type PermissionType = 'private' | 'editable' | 'viewable';
+export type PermissionType = 'private' | 'specified' | 'viewable' | 'editable';
 
 /**
  * 权限配置
