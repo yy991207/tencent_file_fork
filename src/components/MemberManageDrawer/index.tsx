@@ -3,7 +3,7 @@
  * 用于管理文件夹成员和权限设置
  * 从左侧面板右边界滑入（自定义实现，不使用 Ant Design Drawer）
  */
-import React from 'react';
+import React, { useState } from 'react';
 import { Button, Select, Avatar, Tooltip } from 'antd';
 import {
   CloseOutlined,
@@ -11,6 +11,9 @@ import {
   ExportOutlined,
   InfoCircleOutlined,
   EllipsisOutlined,
+  DownOutlined,
+  RightOutlined,
+  TeamOutlined,
 } from '@ant-design/icons';
 import { useAppStore } from '../../store';
 import { PermissionType, FolderMember } from '../../types';
@@ -27,6 +30,14 @@ const permissionOptions = [
   { value: 'editable', label: '所有人可编辑' },
 ];
 
+/**
+ * 成员权限选项
+ */
+const memberRoleOptions = [
+  { value: 'viewer', label: '查看' },
+  { value: 'editor', label: '编辑' },
+];
+
 const MemberManageDrawer: React.FC = () => {
   const {
     activeModal,
@@ -40,8 +51,15 @@ const MemberManageDrawer: React.FC = () => {
     setAddMemberModalOpen,
   } = useAppStore();
 
+  // 空间成员折叠状态
+  const [spaceMembersExpanded, setSpaceMembersExpanded] = useState(true);
+
   // 判断抽屉是否打开
   const isOpen = activeModal === 'memberManage';
+
+  // 分离文件夹所有者和空间成员
+  const ownerMembers = folderMembers.filter(m => m.role === 'owner');
+  const spaceMembers = folderMembers.filter(m => m.role !== 'owner');
 
   /**
    * 关闭抽屉
@@ -99,15 +117,10 @@ const MemberManageDrawer: React.FC = () => {
   };
 
   /**
-   * 获取角色显示文本
+   * 切换空间成员折叠状态
    */
-  const getRoleText = (role: string) => {
-    const roleMap: Record<string, string> = {
-      owner: '文件夹所有者',
-      editor: '可编辑',
-      viewer: '可查看',
-    };
-    return roleMap[role] || role;
+  const toggleSpaceMembers = () => {
+    setSpaceMembersExpanded(!spaceMembersExpanded);
   };
 
   return (
@@ -161,10 +174,10 @@ const MemberManageDrawer: React.FC = () => {
 
           {/* ==================== 成员列表区域 ==================== */}
           <div className={styles.memberList}>
-            {folderMembers.map((member) => (
+            {/* 文件夹所有者 */}
+            {ownerMembers.map((member) => (
               <div key={member.id} className={styles.memberItem}>
                 <div className={styles.memberInfo}>
-                  {/* 成员头像 */}
                   <Avatar
                     size={32}
                     className={styles.memberAvatar}
@@ -172,16 +185,63 @@ const MemberManageDrawer: React.FC = () => {
                   >
                     {member.userName.charAt(0).toUpperCase()}
                   </Avatar>
-                  {/* 成员名称 */}
                   <span className={styles.memberName}>
                     {member.userName}
-                    {member.userId === currentUser?.id && ' (我)'}
+                    {member.userId === currentUser?.id && '（我）'}
                   </span>
                 </div>
-                {/* 成员角色 */}
-                <span className={styles.memberRole}>{getRoleText(member.role)}</span>
+                <span className={styles.memberRole}>文件夹所有者</span>
               </div>
             ))}
+
+            {/* 空间成员分组 */}
+            {spaceMembers.length > 0 && (
+              <div className={styles.spaceMembersSection}>
+                {/* 空间成员标题 */}
+                <div className={styles.spaceMembersHeader} onClick={toggleSpaceMembers}>
+                  <div className={styles.spaceMembersTitle}>
+                    {spaceMembersExpanded ? (
+                      <DownOutlined className={styles.expandIcon} />
+                    ) : (
+                      <RightOutlined className={styles.expandIcon} />
+                    )}
+                    <TeamOutlined className={styles.teamIcon} />
+                    <span>空间成员（{spaceMembers.length}）</span>
+                  </div>
+                  <span className={styles.inheritLabel}>继承权限</span>
+                </div>
+
+                {/* 空间成员列表 */}
+                {spaceMembersExpanded && (
+                  <div className={styles.spaceMembersList}>
+                    {spaceMembers.map((member) => (
+                      <div key={member.id} className={styles.spaceMemberItem}>
+                        <div className={styles.memberInfo}>
+                          <Avatar
+                            size={28}
+                            className={styles.spaceMemberAvatar}
+                            src={member.avatar}
+                          >
+                            {member.userName.charAt(0).toUpperCase()}
+                          </Avatar>
+                          <span className={styles.spaceMemberName}>
+                            {member.userName}
+                          </span>
+                        </div>
+                        <Select
+                          value={member.role}
+                          options={memberRoleOptions}
+                          className={styles.memberRoleSelect}
+                          size="small"
+                          variant="borderless"
+                          suffixIcon={<DownOutlined style={{ fontSize: 10 }} />}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

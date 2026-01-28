@@ -123,6 +123,10 @@
   }
 }
 
+.pinIconActive {
+  color: var(--primary-color);
+}
+
 /* ==================== 主内容区 ==================== */
 .mainContent {
   display: flex;
@@ -547,7 +551,7 @@
 .pinnedLeftPanel {
   display: flex;
   flex-direction: column;
-  width: 280px;
+  width: 263px;
   height: 100%;
   background-color: var(--bg-color-white);
   border-right: 1px solid var(--border-color-dark);
@@ -576,6 +580,7 @@
 .pinnedAddBtn {
   margin: 16px;
   height: 36px;
+  width: calc(100% - 32px);
   border: 1px solid var(--border-color);
   border-radius: 6px;
 
@@ -711,4 +716,33 @@
   margin: 0;
   font-size: 14px;
   color: var(--text-color-tertiary);
+}
+
+/* 置顶模式 - 文件夹内容区域 */
+.pinnedFolderContent {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+/* 置顶模式 - 空状态 */
+.pinnedEmptyContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.emptyIcon {
+  font-size: 64px;
+  color: var(--border-color);
+  margin-bottom: 16px;
+}
+
+.emptyText {
+  font-size: 14px;
+  color: var(--text-color-tertiary);
+  text-align: center;
 }
