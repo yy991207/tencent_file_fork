@@ -746,3 +746,51 @@
   color: var(--text-color-tertiary);
   text-align: center;
 }
+
+/* ==================== 置顶模式内容面板 ==================== */
+.pinnedContentPanel {
+  display: flex;
+  flex-direction: column;
+  width: 380px;
+  height: 100%;
+  background-color: var(--bg-color-white);
+  border-right: 1px solid var(--border-color-dark);
+}
+
+.pinnedContentHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border-color-light);
+}
+
+.pinnedContentTitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-color-primary);
+}
+
+.pinnedContentIcons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pinnedContentIcon {
+  font-size: 18px;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+  transition: color 0.2s;
+
+  &:hover {
+    color: var(--primary-color);
+  }
+}
+
+.pinnedContentBody {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+}

@@ -187,8 +187,10 @@ const HomePage: React.FC = () => {
   const [folderPath, setFolderPath] = useState<string[]>(['clawd']);
   // 当前选中的文档（用于显示文档详情）
   const [selectedDocument, setSelectedDocument] = useState<FileItem | null>(null);
-  // 置顶模式（固定左侧边栏）
+  // 置顶模式（固定左侧边栏，点击内容在右侧展开）
   const [pinnedMode, setPinnedMode] = useState(false);
+  // 置顶模式下选中的内容（文档或文件夹）
+  const [pinnedSelectedItem, setPinnedSelectedItem] = useState<FileItem | null>(null);
 
   // 获取当前文件夹数据
   const currentFolderName = folderPath[folderPath.length - 1];
@@ -281,16 +283,23 @@ const HomePage: React.FC = () => {
   /**
    * 处理文件点击
    * 如果是文件夹，进入子目录；如果是文档，展示文档详情
+   * 置顶模式下，内容在右侧面板显示，不覆盖文件列表
    */
   const handleFileClick = (file: FileItem) => {
-    if (file.type === FileType.FOLDER) {
-      // 进入子文件夹
-      if (mockFolderData[file.name]) {
-        setFolderPath([...folderPath, file.name]);
-      }
+    if (pinnedMode) {
+      // 置顶模式：在右侧面板显示内容
+      setPinnedSelectedItem(file);
     } else {
-      // 展示文档详情（动画过渡）
-      setSelectedDocument(file);
+      // 非置顶模式：在当前面板内切换
+      if (file.type === FileType.FOLDER) {
+        // 进入子文件夹
+        if (mockFolderData[file.name]) {
+          setFolderPath([...folderPath, file.name]);
+        }
+      } else {
+        // 展示文档详情（动画过渡）
+        setSelectedDocument(file);
+      }
     }
   };
 
@@ -427,8 +436,8 @@ const HomePage: React.FC = () => {
 
               {/* ==================== 展开状态内容 ==================== */}
               <div className={`${styles.expandedContent} ${expanded ? styles.visible : ''}`}>
-                {/* 文件列表视图 */}
-                <div className={`${styles.fileListView} ${selectedDocument ? styles.hidden : ''}`}>
+                {/* 文件列表视图 - 置顶模式下始终显示 */}
+                <div className={`${styles.fileListView} ${selectedDocument && !pinnedMode ? styles.hidden : ''}`}>
                   {/* 文件夹信息头部 */}
                   <div className={styles.folderHeader}>
                     <FolderIcon size="large" />
@@ -454,8 +463,8 @@ const HomePage: React.FC = () => {
                   />
                 </div>
 
-                {/* 文档详情视图 */}
-                <div className={`${styles.documentView} ${selectedDocument ? styles.visible : ''}`}>
+                {/* 文档详情视图 - 非置顶模式下使用 */}
+                <div className={`${styles.documentView} ${selectedDocument && !pinnedMode ? styles.visible : ''}`}>
                   {selectedDocument && (
                     <>
                       {/* 文档头部 */}
@@ -538,6 +547,70 @@ const HomePage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* ==================== 置顶模式：内容面板（显示选中的文档或文件夹） ==================== */}
+      {pinnedMode && expanded && pinnedSelectedItem && (
+        <div className={styles.pinnedContentPanel}>
+          {/* 顶部栏 */}
+          <div className={styles.pinnedContentHeader}>
+            <span className={styles.pinnedContentTitle}>
+              {pinnedSelectedItem.name}
+            </span>
+            <div className={styles.pinnedContentIcons}>
+              <TeamOutlined className={styles.pinnedContentIcon} onClick={handleOpenMemberManage} />
+              <ExportOutlined className={styles.pinnedContentIcon} />
+              <CloseOutlined className={styles.pinnedContentIcon} onClick={() => setPinnedSelectedItem(null)} />
+            </div>
+          </div>
+
+          {/* 内容区域 */}
+          <div className={styles.pinnedContentBody}>
+            {pinnedSelectedItem.type === FileType.FOLDER ? (
+              // 文件夹内容
+              <>
+                <div className={styles.folderHeader}>
+                  <FolderIcon size="large" />
+                  <div className={styles.folderInfo}>
+                    <h2 className={styles.folderTitle}>{pinnedSelectedItem.name}</h2>
+                    <p className={styles.folderMeta}>
+                      {mockFolderData[pinnedSelectedItem.name]?.fileCount || 0}个文件 | {mockFolderData[pinnedSelectedItem.name]?.folderCount || 0}个文件夹
+                    </p>
+                  </div>
+                </div>
+                <div className={styles.listHeader}>
+                  <span>名称</span>
+                  <div className={styles.listHeaderRight}>
+                    <span>所有者</span>
+                    <span>最近编辑 ▼</span>
+                  </div>
+                </div>
+                {mockFolderData[pinnedSelectedItem.name] && (
+                  <FileList
+                    files={mockFolderData[pinnedSelectedItem.name].files}
+                    onFileClick={(file) => setPinnedSelectedItem(file)}
+                  />
+                )}
+              </>
+            ) : (
+              // 文档内容
+              <>
+                <div className={styles.documentMeta}>
+                  <span>所有者: {pinnedSelectedItem.owner}</span>
+                  <span>最近编辑: {pinnedSelectedItem.lastModified}</span>
+                </div>
+                <div className={styles.documentContent}>
+                  <p className={styles.documentPlaceholder}>
+                    这里是 {pinnedSelectedItem.name} 文档的内容区域...
+                  </p>
+                  <p className={styles.documentPlaceholder}>
+                    文档内容将在此处显示。
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ==================== 右侧内容区 ==================== */}
       <RightContent />
