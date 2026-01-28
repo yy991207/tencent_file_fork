@@ -447,15 +447,6 @@ const HomePage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* 文件列表表头 */}
-                  <div className={styles.listHeader}>
-                    <span>名称</span>
-                    <div className={styles.listHeaderRight}>
-                      <span>所有者</span>
-                      <span>最近编辑 ▼</span>
-                    </div>
-                  </div>
-
                   {/* 文件列表 */}
                   <FileList
                     files={currentFolder.files}
@@ -575,13 +566,6 @@ const HomePage: React.FC = () => {
                     <p className={styles.folderMeta}>
                       {mockFolderData[pinnedSelectedItem.name]?.fileCount || 0}个文件 | {mockFolderData[pinnedSelectedItem.name]?.folderCount || 0}个文件夹
                     </p>
-                  </div>
-                </div>
-                <div className={styles.listHeader}>
-                  <span>名称</span>
-                  <div className={styles.listHeaderRight}>
-                    <span>所有者</span>
-                    <span>最近编辑 ▼</span>
                   </div>
                 </div>
                 {mockFolderData[pinnedSelectedItem.name] && (
