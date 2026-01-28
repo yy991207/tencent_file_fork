@@ -1,0 +1,542 @@
+/**
+ * 首页样式
+ * 包含收起/展开状态的平滑过渡动画
+ * 以及目录树弹窗和成员管理抽屉样式
+ */
+.homePage {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+/* ==================== 左侧面板容器 ==================== */
+.leftPanelContainer {
+  position: relative;
+  display: flex;
+  height: 100%;
+}
+
+/* 成员管理抽屉容器 - 定位在左侧面板右边界 */
+.drawerWrapper {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  z-index: 50;
+}
+
+/* ==================== 左侧面板主体 ==================== */
+.leftPanel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 263px;
+  height: 100%;
+  background-color: var(--bg-color-white);
+  border-right: 1px solid var(--border-color-dark);
+  overflow: visible; /* 允许抽屉溢出显示 */
+  /* 过渡动画 */
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 展开状态 */
+.leftPanel.expanded {
+  width: 520px;
+}
+
+/* ==================== 顶部栏（展开时显示） ==================== */
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 0;
+  padding: 0 16px;
+  border-bottom: 2px solid var(--primary-color);
+  opacity: 0;
+  overflow: hidden;
+  transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.topBar.visible {
+  height: 48px;
+  opacity: 1;
+}
+
+.topBarTitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-color-primary);
+}
+
+.topBarIcons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topBarIcon {
+  font-size: 18px;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+  transition: color 0.2s;
+
+  &:hover {
+    color: var(--primary-color);
+  }
+}
+
+/* ==================== 面板头部（收起时显示） ==================== */
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 12px;
+  opacity: 1;
+  max-height: 60px;
+  overflow: hidden;
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.panelHeader.hidden {
+  opacity: 0;
+  max-height: 0;
+  padding: 0 16px;
+}
+
+.panelTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-color-primary);
+}
+
+.pinIcon {
+  font-size: 16px;
+  color: var(--text-color-tertiary);
+  cursor: pointer;
+  transition: color 0.2s;
+
+  &:hover {
+    color: var(--primary-color);
+  }
+}
+
+/* ==================== 主内容区 ==================== */
+.mainContent {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 侧边切换按钮（展开时显示） */
+.sideToggle {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  width: 0;
+  padding-top: 16px;
+  cursor: pointer;
+  opacity: 0;
+  overflow: hidden;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 0.2s;
+
+  &:hover {
+    background-color: var(--bg-color-light);
+  }
+}
+
+.sideToggle.visible {
+  width: 40px;
+  opacity: 1;
+}
+
+.toggleIcon {
+  font-size: 20px;
+  color: var(--text-color-secondary);
+
+  &:hover {
+    color: var(--primary-color);
+  }
+}
+
+/* 内容区域 */
+.contentArea {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+/* 添加资料按钮 */
+.addBtnWrapper {
+  margin-bottom: 12px;
+}
+
+.addButton {
+  height: 36px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+
+  &:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+  }
+}
+
+/* ==================== 收起状态内容 ==================== */
+.collapsedContent {
+  opacity: 1;
+  max-height: 1000px;
+  overflow: hidden;
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.collapsedContent.hidden {
+  opacity: 0;
+  max-height: 0;
+}
+
+/* 工具栏 */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border-color-light);
+}
+
+.selectedInfo {
+  font-size: 13px;
+  color: var(--text-color-secondary);
+}
+
+.toolIcons {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.toolIcon {
+  font-size: 16px;
+  color: var(--text-color-tertiary);
+  cursor: pointer;
+  transition: color 0.2s;
+
+  &:hover {
+    color: var(--primary-color);
+  }
+}
+
+/* 文件夹列表 */
+.folderList {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.tree {
+  :global {
+    .ant-tree-treenode {
+      padding: 6px 8px;
+      border-radius: 6px;
+      width: 100%;
+
+      &:hover {
+        background-color: var(--bg-color-light);
+      }
+    }
+
+    .ant-tree-node-content-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .ant-tree-iconEle {
+      width: 20px;
+      height: 20px;
+    }
+
+    .ant-tree-title {
+      font-size: 14px;
+      color: var(--text-color-primary);
+      flex: 1;
+    }
+
+    .ant-tree-switcher {
+      width: 20px;
+    }
+
+    .ant-tree-node-selected {
+      background-color: #E8F4FD !important;
+      border-radius: 6px;
+    }
+  }
+}
+
+/* ==================== 展开状态内容 ==================== */
+.expandedContent {
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.expandedContent.visible {
+  opacity: 1;
+  max-height: 2000px;
+}
+
+/* 文件列表视图 */
+.fileListView {
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fileListView.hidden {
+  opacity: 0;
+  transform: translateX(-20px);
+  position: absolute;
+  pointer-events: none;
+}
+
+/* 文档详情视图 */
+.documentView {
+  opacity: 0;
+  transform: translateX(20px);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.documentView.visible {
+  opacity: 1;
+  transform: translateX(0);
+  position: relative;
+  pointer-events: auto;
+}
+
+/* 文档头部 */
+.documentHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.backIcon {
+  font-size: 18px;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+
+  &:hover {
+    color: var(--primary-color);
+    background-color: var(--bg-color-light);
+  }
+}
+
+.documentIcon {
+  font-size: 32px;
+  color: #4285F4;
+}
+
+.documentTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-color-primary);
+}
+
+/* 文档信息 */
+.documentMeta {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-color-light);
+  font-size: 13px;
+  color: var(--text-color-tertiary);
+}
+
+/* 文档内容区域 */
+.documentContent {
+  flex: 1;
+  padding: 16px;
+  background-color: var(--bg-color-light);
+  border-radius: 8px;
+  min-height: 300px;
+}
+
+.documentPlaceholder {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: var(--text-color-secondary);
+  line-height: 1.6;
+}
+
+/* 文件夹头部 */
+.folderHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.folderInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.folderTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-color-primary);
+}
+
+.folderMeta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-color-tertiary);
+}
+
+/* 列表表头 */
+.listHeader {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--text-color-secondary);
+  border-bottom: 1px solid var(--border-color-light);
+}
+
+.listHeaderRight {
+  display: flex;
+  gap: 20px;
+}
+
+/* ==================== 目录树弹窗样式 ==================== */
+.treePopup {
+  position: absolute;
+  left: 0;
+  top: 126px;
+  width: 220px;
+  padding: 16px;
+  background-color: var(--bg-color-white);
+  border: 1px solid #E8E8E8;
+  border-radius: 8px;
+  box-shadow: 4px 0 12px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+  /* 初始状态：隐藏 */
+  opacity: 0;
+  transform: translateX(-10px);
+  pointer-events: none;
+  transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.treePopup.visible {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.treeHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.treeTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-color-primary);
+}
+
+.treePinIcon {
+  font-size: 18px;
+  color: #888888;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--primary-color);
+  }
+}
+
+.treeAddBtn {
+  height: 36px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+
+  &:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+  }
+}
+
+.treeSelectedInfo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--text-color-secondary);
+}
+
+.treeContent {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.directoryTree {
+  :global {
+    .ant-tree-treenode {
+      padding: 4px 0;
+    }
+
+    .ant-tree-node-content-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ant-tree-iconEle {
+      width: 16px;
+      height: 16px;
+    }
+
+    .ant-tree-title {
+      font-size: 13px;
+    }
+
+    .ant-tree-switcher {
+      width: 16px;
+    }
+
+    .ant-tree-node-selected {
+      background-color: #E8F4FD !important;
+      border-radius: 4px;
+    }
+  }
+}

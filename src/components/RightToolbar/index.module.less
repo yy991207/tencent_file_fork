@@ -1,0 +1,46 @@
+/**
+ * 右侧工具栏样式
+ */
+.rightToolbar {
+  display: flex;
+  flex-direction: column;
+  width: 56px;
+  height: 100%;
+  padding: 16px 8px;
+  background-color: var(--bg-color-white);
+  border-left: 1px solid var(--border-color-dark);
+}
+
+.topTools {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bottomTools {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.toolIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+  color: var(--text-color-secondary);
+  border-radius: var(--border-radius-lg);
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: #f5f5f5;
+    color: var(--primary-color);
+  }
+}

@@ -1,0 +1,72 @@
+/**
+ * 文件列表样式
+ */
+.fileList {
+  width: 100%;
+
+  :global {
+    .ant-table {
+      background: transparent;
+    }
+
+    .ant-table-thead > tr > th {
+      background: transparent;
+      border-bottom: 1px solid var(--border-color-light);
+      font-size: 12px;
+      color: var(--text-color-secondary);
+      font-weight: normal;
+      padding: 8px 8px;
+    }
+
+    .ant-table-tbody > tr > td {
+      border-bottom: 1px solid #EEEEEE;
+      padding: 12px 8px;
+    }
+
+    .ant-table-tbody > tr:hover > td {
+      background: #f5f5f5;
+    }
+  }
+}
+
+.tableRow {
+  cursor: pointer;
+}
+
+.nameCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fileName {
+  font-size: 14px;
+  color: var(--text-color-primary);
+}
+
+.docIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background-color: #4285F4;
+  border-radius: 3px;
+  flex-shrink: 0;
+
+  span {
+    font-size: 10px;
+    font-weight: bold;
+    color: #FFFFFF;
+  }
+}
+
+.ownerText {
+  font-size: 13px;
+  color: var(--text-color-secondary);
+}
+
+.timeText {
+  font-size: 13px;
+  color: var(--text-color-secondary);
+}

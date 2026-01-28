@@ -1,0 +1,174 @@
+/**
+ * 右侧内容区样式
+ */
+.rightContent {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  height: 100%;
+  background-color: var(--bg-color-light);
+}
+
+/* ==================== 顶部导航栏样式 ==================== */
+.topNav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 24px;
+  background-color: var(--bg-color-white);
+  border-bottom: 1px solid var(--border-color-light);
+}
+
+.navLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logoCircle {
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(180deg, #00D4AA 0%, #00B4D8 100%);
+  border-radius: 50%;
+}
+
+.logoText {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-color-primary);
+}
+
+.navRight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  :global {
+    .ant-btn-text {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 32px;
+      padding: 0 12px;
+      background-color: #F0F0F0;
+      border-radius: 6px;
+    }
+  }
+}
+
+.navIcon {
+  font-size: 20px;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--primary-color);
+  }
+}
+
+/* ==================== 主内容区域样式 ==================== */
+.mainArea {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 24px 48px 24px 24px;
+  gap: 24px;
+}
+
+/* 大卡片样式 */
+.heroCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 151px;
+  padding: 24px 32px;
+  background-image: url('/images/hero-bg.png');
+  background-size: cover;
+  background-position: center;
+  border-radius: 12px;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+
+  /* 底部渐变遮罩确保文字可读 */
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 80px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.4) 0%, transparent 100%);
+    border-radius: 0 0 12px 12px;
+    pointer-events: none;
+  }
+}
+
+.heroTitle {
+  position: relative;
+  z-index: 1;
+  margin: 0 0 4px 0;
+  font-size: 26px;
+  font-weight: 500;
+  color: #FFFFFF;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.heroSubtitle {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 占位区域 */
+.spacer {
+  flex: 1;
+}
+
+/* AI问答输入框样式 */
+.inputCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background-color: var(--bg-color-white);
+  border: 1px solid #a6a2a2;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.inputLine {
+  width: 3px;
+  height: 44px;
+  background-color: #3B82F6;
+  border-radius: 2px;
+}
+
+.inputContent {
+  flex: 1;
+}
+
+.inputTitle {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  color: var(--text-color-primary);
+}
+
+.inputSubtitle {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-color-tertiary);
+}
+
+.sendButton {
+  width: 40px;
+  height: 40px;
+  background-color: #3B82F6;
+
+  &:hover {
+    background-color: #2563EB !important;
+  }
+}

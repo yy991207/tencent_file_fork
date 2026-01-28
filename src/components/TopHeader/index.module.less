@@ -1,0 +1,56 @@
+/**
+ * 顶部导航栏样式
+ */
+.topHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 24px;
+  background-color: var(--bg-color-white);
+  border-bottom: 1px solid var(--border-color-light);
+}
+
+.leftSection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.homeIcon {
+  font-size: 20px;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+  transition: color 0.2s;
+
+  &:hover {
+    color: var(--primary-color);
+  }
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-color-primary);
+}
+
+.rightSection {
+  display: flex;
+  align-items: center;
+}
+
+.actionIcon {
+  font-size: 18px;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+  transition: color 0.2s;
+
+  &:hover {
+    color: var(--primary-color);
+  }
+}
+
+.userAvatar {
+  cursor: pointer;
+  background: linear-gradient(135deg, #00D4AA 0%, #00B4D8 100%);
+}

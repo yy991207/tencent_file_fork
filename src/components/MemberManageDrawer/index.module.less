@@ -1,0 +1,200 @@
+/**
+ * 成员管理抽屉样式
+ * 自定义抽屉，从右向左滑入（由右向左划入进场）
+ */
+
+/* ==================== 抽屉主容器 ==================== */
+.memberDrawer {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 257px;
+  height: 100%;
+  background-color: var(--bg-color-white);
+  border-left: 1px solid #E8E8E8;
+  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.12);
+  /* 初始状态：在右边界外隐藏 */
+  transform: translateX(100%);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 显示状态：向左滑入到位 */
+.memberDrawer.visible {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ==================== 抽屉头部 ==================== */
+.drawerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 16px;
+  border-bottom: 1px solid var(--border-color-light);
+  width: 257px;
+  min-width: 257px;
+}
+
+.drawerTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-color-primary);
+  white-space: nowrap;
+}
+
+.closeIcon {
+  font-size: 16px;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+  transition: color 0.2s;
+
+  &:hover {
+    color: var(--text-color-primary);
+  }
+}
+
+/* ==================== 抽屉内容 ==================== */
+.drawerBody {
+  padding: 16px;
+  overflow-y: auto;
+  height: calc(100% - 65px);
+  width: 257px;
+  min-width: 257px;
+}
+
+/* ==================== 权限设置区域 ==================== */
+.section {
+  margin-bottom: 16px;
+}
+
+.sectionLabel {
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--text-color-tertiary);
+}
+
+.permissionRow {
+  display: flex;
+  gap: 8px;
+
+  :global {
+    .ant-select {
+      flex: 1;
+    }
+
+    .ant-select-selector {
+      height: 36px !important;
+      padding: 0 12px !important;
+      border-radius: 6px !important;
+    }
+
+    .ant-select-selection-item {
+      line-height: 34px !important;
+      font-size: 13px;
+    }
+
+    .ant-btn {
+      height: 36px;
+      padding: 0 12px;
+      font-size: 13px;
+      border-radius: 6px;
+    }
+  }
+}
+
+.permissionSelect {
+  :global {
+    .ant-select-selector {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  }
+}
+
+/* ==================== 成员标题区域 ==================== */
+.memberHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.memberTitle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text-color-primary);
+}
+
+.infoIcon {
+  font-size: 14px;
+  color: var(--text-color-tertiary);
+  cursor: pointer;
+}
+
+.moreIcon {
+  font-size: 18px;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+}
+
+/* ==================== 操作按钮区域 ==================== */
+.actionButtons {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+
+  :global {
+    .ant-btn {
+      height: 36px;
+      padding: 0 10px;
+      font-size: 13px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+  }
+}
+
+/* ==================== 成员列表区域 ==================== */
+.memberList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.memberItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+
+.memberInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.memberAvatar {
+  background: linear-gradient(135deg, #00D4AA 0%, #00B4D8 100%);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.memberName {
+  font-size: 14px;
+  color: var(--text-color-primary);
+}
+
+.memberRole {
+  font-size: 12px;
+  color: var(--text-color-tertiary);
+}
