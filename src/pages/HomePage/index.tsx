@@ -2,8 +2,9 @@
  * 首页组件
  * 对应设计稿中的"页面1_腾讯文档首页"、"页面2_目录展开页面"、"页面3_目录树展开页面"
  * 支持面板展开/收起、目录树显示/隐藏、成员管理抽屉等功能
+ * 支持文件拖拽排序和移入文件夹功能
  */
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Button, Tree, Space } from 'antd';
 import type { TreeDataNode } from 'antd';
@@ -70,7 +71,7 @@ const directoryTreeData: TreeDataNode[] = [
 ];
 
 /**
- * 模拟文件数据结构（支持嵌套目录）
+ * 文件夹数据结构（支持嵌套目录）
  */
 interface FolderData {
   name: string;
@@ -79,7 +80,10 @@ interface FolderData {
   folderCount: number;
 }
 
-const mockFolderData: Record<string, FolderData> = {
+/**
+ * 初始文件数据
+ */
+const initialFolderData: Record<string, FolderData> = {
   'clawd': {
     name: 'clawd',
     files: [
@@ -175,6 +179,11 @@ const mockFolderData: Record<string, FolderData> = {
   },
 };
 
+/**
+ * 拖拽放置位置类型
+ */
+type DropPosition = 'inside' | 'before' | 'after' | null;
+
 const HomePage: React.FC = () => {
   const location = useLocation();
   const { setActiveModal } = useAppStore();
@@ -192,9 +201,22 @@ const HomePage: React.FC = () => {
   // 置顶模式下选中的内容（文档或文件夹）
   const [pinnedSelectedItem, setPinnedSelectedItem] = useState<FileItem | null>(null);
 
+  // 文件夹数据状态（支持动态更新）
+  const [folderData, setFolderData] = useState<Record<string, FolderData>>(initialFolderData);
+
   // 获取当前文件夹数据
   const currentFolderName = folderPath[folderPath.length - 1];
-  const currentFolder = mockFolderData[currentFolderName] || mockFolderData['clawd'];
+  const currentFolder = folderData[currentFolderName] || folderData['clawd'];
+
+  // 构建子文件映射（用于文件夹展开功能）
+  // 将 folderData 转换为 childrenMap 格式（文件夹名 -> 子文件列表）
+  const childrenMap = useMemo(() => {
+    const map: Record<string, FileItem[]> = {};
+    Object.keys(folderData).forEach(folderName => {
+      map[folderName] = folderData[folderName].files;
+    });
+    return map;
+  }, [folderData]);
 
   // 目录树弹窗的 ref，用于检测点击外部
   const treePopupRef = useRef<HTMLDivElement>(null);
@@ -248,6 +270,159 @@ const HomePage: React.FC = () => {
   }, [treeVisible]);
 
   /**
+   * 计算文件夹的文件数和文件夹数
+   */
+  const calculateCounts = useCallback((files: FileItem[]): { fileCount: number; folderCount: number } => {
+    let fileCount = 0;
+    let folderCount = 0;
+    files.forEach(file => {
+      if (file.type === FileType.FOLDER) {
+        folderCount++;
+      } else {
+        fileCount++;
+      }
+    });
+    return { fileCount, folderCount };
+  }, []);
+
+  /**
+   * 在所有文件夹中查找指定文件所在的文件夹名称
+   * @param data 文件夹数据
+   * @param itemId 要查找的文件 ID
+   * @returns 文件所在的文件夹名称，找不到返回 null
+   */
+  const findItemFolder = useCallback((
+    data: Record<string, FolderData>,
+    itemId: string
+  ): string | null => {
+    for (const folderName of Object.keys(data)) {
+      const folder = data[folderName];
+      const found = folder.files.find(f => f.id === itemId);
+      if (found) {
+        return folderName;
+      }
+    }
+    return null;
+  }, []);
+
+  /**
+   * 处理文件拖拽放置
+   * 实现真正的文件移动功能
+   * @param dragItem 被拖拽的文件/文件夹
+   * @param targetItem 目标位置的文件/文件夹
+   * @param position 放置位置：'inside'放入文件夹, 'before'插入到目标前面, 'after'插入到目标后面
+   */
+  const handleFileDrop = useCallback((
+    dragItem: FileItem,
+    targetItem: FileItem | null,
+    position: DropPosition
+  ) => {
+    // 如果没有有效的放置位置，不处理
+    if (!position || !targetItem) {
+      console.log('无效的放置操作');
+      return;
+    }
+
+    // 不能将文件夹放入自身
+    if (dragItem.id === targetItem.id) {
+      console.log('不能将文件放入自身');
+      return;
+    }
+
+    // 如果是放入文件夹操作，目标必须是文件夹
+    if (position === 'inside' && targetItem.type !== FileType.FOLDER) {
+      console.log('目标不是文件夹，无法放入');
+      return;
+    }
+
+    setFolderData(prevData => {
+      // 深拷贝数据，避免直接修改状态
+      const newData = JSON.parse(JSON.stringify(prevData)) as Record<string, FolderData>;
+
+      // 在所有文件夹中查找被拖拽文件所在的源文件夹
+      const sourceFolderName = findItemFolder(newData, dragItem.id);
+      if (!sourceFolderName) {
+        console.log('找不到被拖拽的文件所在的文件夹');
+        return prevData;
+      }
+
+      const sourceFolderFiles = newData[sourceFolderName].files;
+
+      // 找到被拖拽项在源文件夹中的索引
+      const dragIndex = sourceFolderFiles.findIndex(f => f.id === dragItem.id);
+      if (dragIndex === -1) {
+        console.log('找不到被拖拽的文件');
+        return prevData;
+      }
+
+      // 从源文件夹中移除被拖拽项
+      const [removedItem] = sourceFolderFiles.splice(dragIndex, 1);
+
+      if (position === 'inside') {
+        // 放入文件夹操作
+        const targetFolderName = targetItem.name;
+
+        // 如果目标文件夹在 folderData 中不存在，创建它
+        if (!newData[targetFolderName]) {
+          newData[targetFolderName] = {
+            name: targetFolderName,
+            files: [],
+            fileCount: 0,
+            folderCount: 0,
+          };
+        }
+
+        // 将文件添加到目标文件夹
+        newData[targetFolderName].files.push(removedItem);
+
+        // 更新目标文件夹的计数
+        const targetCounts = calculateCounts(newData[targetFolderName].files);
+        newData[targetFolderName].fileCount = targetCounts.fileCount;
+        newData[targetFolderName].folderCount = targetCounts.folderCount;
+
+        console.log(`已将 "${removedItem.name}" 从 "${sourceFolderName}" 移入文件夹 "${targetFolderName}"`);
+      } else {
+        // 排序操作（before 或 after）
+        // 查找目标文件所在的文件夹
+        const targetFolderName = findItemFolder(newData, targetItem.id);
+        if (!targetFolderName) {
+          console.log('找不到目标文件所在的文件夹');
+          return prevData;
+        }
+
+        const targetFolderFiles = newData[targetFolderName].files;
+        const targetIndex = targetFolderFiles.findIndex(f => f.id === targetItem.id);
+        if (targetIndex === -1) {
+          console.log('找不到目标文件');
+          return prevData;
+        }
+
+        // 计算插入位置
+        const insertIndex = position === 'before' ? targetIndex : targetIndex + 1;
+
+        // 插入到新位置
+        targetFolderFiles.splice(insertIndex, 0, removedItem);
+
+        console.log(`已将 "${removedItem.name}" 移动到 "${targetItem.name}" ${position === 'before' ? '前面' : '后面'}`);
+
+        // 如果是跨文件夹移动，更新目标文件夹计数
+        if (sourceFolderName !== targetFolderName) {
+          const targetCounts = calculateCounts(targetFolderFiles);
+          newData[targetFolderName].fileCount = targetCounts.fileCount;
+          newData[targetFolderName].folderCount = targetCounts.folderCount;
+        }
+      }
+
+      // 更新源文件夹的计数
+      const sourceCounts = calculateCounts(sourceFolderFiles);
+      newData[sourceFolderName].fileCount = sourceCounts.fileCount;
+      newData[sourceFolderName].folderCount = sourceCounts.folderCount;
+
+      return newData;
+    });
+  }, [findItemFolder, calculateCounts]);
+
+  /**
    * 处理添加资料按钮点击
    */
   const handleAddFile = () => {
@@ -293,7 +468,7 @@ const HomePage: React.FC = () => {
       // 非置顶模式：在当前面板内切换
       if (file.type === FileType.FOLDER) {
         // 进入子文件夹
-        if (mockFolderData[file.name]) {
+        if (folderData[file.name]) {
           setFolderPath([...folderPath, file.name]);
         }
       } else {
@@ -447,10 +622,12 @@ const HomePage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* 文件列表 */}
+                  {/* 文件列表 - 支持拖拽排序和移入文件夹 */}
                   <FileList
                     files={currentFolder.files}
                     onFileClick={handleFileClick}
+                    onDrop={handleFileDrop}
+                    childrenMap={childrenMap}
                   />
                 </div>
 
@@ -564,14 +741,16 @@ const HomePage: React.FC = () => {
                   <div className={styles.folderInfo}>
                     <h2 className={styles.folderTitle}>{pinnedSelectedItem.name}</h2>
                     <p className={styles.folderMeta}>
-                      {mockFolderData[pinnedSelectedItem.name]?.fileCount || 0}个文件 | {mockFolderData[pinnedSelectedItem.name]?.folderCount || 0}个文件夹
+                      {folderData[pinnedSelectedItem.name]?.fileCount || 0}个文件 | {folderData[pinnedSelectedItem.name]?.folderCount || 0}个文件夹
                     </p>
                   </div>
                 </div>
-                {mockFolderData[pinnedSelectedItem.name] && (
+                {folderData[pinnedSelectedItem.name] && (
                   <FileList
-                    files={mockFolderData[pinnedSelectedItem.name].files}
+                    files={folderData[pinnedSelectedItem.name].files}
                     onFileClick={(file) => setPinnedSelectedItem(file)}
+                    onDrop={handleFileDrop}
+                    childrenMap={childrenMap}
                   />
                 )}
               </>

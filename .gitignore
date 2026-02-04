@@ -35,5 +35,8 @@ pnpm-debug.log*
 # Claude Code
 .claude/
 
+# MCP配置（本地工具链配置，不需要提交）
+.mcp.json
+
 # Design files (optional, uncomment if needed)
 # *.pen

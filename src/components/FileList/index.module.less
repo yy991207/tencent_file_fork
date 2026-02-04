@@ -1,49 +1,236 @@
 /**
  * 文件列表样式
+ * 包含拖拽视觉反馈效果：
+ * 1. 放入文件夹 - 蓝色边框 + 背景高亮
+ * 2. 插入排序 - 蓝色水平指示线 + 圆点
+ * 3. 文件夹展开/折叠功能
  */
+
+/* ==================== 基础布局 ==================== */
 .fileList {
   width: 100%;
+  user-select: none;
+}
 
-  :global {
-    .ant-table {
-      background: transparent;
-    }
+/* ==================== 表头样式 ==================== */
+.tableHeader {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color-light);
+  font-size: 12px;
+  color: var(--text-color-secondary);
+  font-weight: normal;
+}
 
-    .ant-table-thead > tr > th {
-      background: transparent;
-      border-bottom: 1px solid var(--border-color-light);
-      font-size: 12px;
-      color: var(--text-color-secondary);
-      font-weight: normal;
-      padding: 8px 8px;
-    }
+.checkboxCell {
+  width: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-    .ant-table-tbody > tr > td {
-      border-bottom: 1px solid #EEEEEE;
-      padding: 12px 8px;
-    }
+  input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--primary-color);
+  }
+}
 
-    .ant-table-tbody > tr:hover > td {
-      background: #f5f5f5;
+.nameHeader {
+  flex: 1;
+  min-width: 0;
+  padding-left: 28px; /* 为展开按钮留出空间 */
+}
+
+.ownerHeader {
+  width: 80px;
+  flex-shrink: 0;
+  text-align: left;
+}
+
+.timeHeader {
+  width: 120px;
+  flex-shrink: 0;
+  text-align: left;
+}
+
+/* ==================== 表体样式 ==================== */
+.tableBody {
+  position: relative;
+}
+
+/* ==================== 行容器（包含指示线） ==================== */
+.rowWrapper {
+  position: relative;
+}
+
+/* ==================== 表格行样式 ==================== */
+.tableRow {
+  display: flex;
+  align-items: center;
+  padding: 12px 12px;
+  border-bottom: 1px solid #EEEEEE;
+  cursor: pointer;
+  background-color: transparent;
+  border-radius: 4px;
+  /* 移除负margin，修复边框被截断的问题 */
+  margin: 2px 4px;
+  box-sizing: border-box;
+
+  /* 默认过渡效果 - 平滑响应 */
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:hover {
+    background-color: #f5f5f5;
+  }
+
+  /* 选中状态 */
+  &.selected {
+    background-color: #e6f4ff;
+  }
+
+  /* 拖拽时的半透明效果（通过 JS 控制） */
+  &[draggable="true"] {
+    cursor: grab;
+
+    &:active {
+      cursor: grabbing;
     }
   }
 }
 
-.tableRow {
-  cursor: pointer;
+/* ==================== 放入文件夹效果 - 蓝色边框高亮 ==================== */
+.dropInside {
+  background-color: #e6f7ff !important;
+  border: 2px solid #1890ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  border-radius: 6px;
+
+  /* 内边距调整，补偿边框宽度变化 */
+  padding: 10px 10px;
 }
 
+/* ==================== 插入排序指示线 ==================== */
+.dropIndicator {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  height: 2px;
+  pointer-events: none;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+}
+
+/* 上方指示线 */
+.dropIndicatorBefore {
+  top: 0;
+}
+
+/* 下方指示线 */
+.dropIndicatorAfter {
+  bottom: 0;
+}
+
+/* 指示线圆点 */
+.dropIndicatorDot {
+  width: 6px;
+  height: 6px;
+  background-color: #1890ff;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.3);
+}
+
+/* 指示线主体 */
+.dropIndicatorLine {
+  flex: 1;
+  height: 2px;
+  background-color: #1890ff;
+  border-radius: 1px;
+  box-shadow: 0 0 4px rgba(24, 144, 255, 0.4);
+}
+
+/* ==================== 展开/折叠按钮样式 ==================== */
+.expandButton {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.06);
+  }
+}
+
+/* 没有子文件时隐藏展开按钮（但保留空间） */
+.expandButtonHidden {
+  visibility: hidden;
+}
+
+/* 展开图标 */
+.expandIcon {
+  font-size: 10px;
+  color: var(--text-color-secondary);
+  transition: transform 0.2s ease;
+}
+
+/* 占位符（非文件夹项目使用，保持对齐） */
+.expandPlaceholder {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* ==================== 单元格样式 ==================== */
 .nameCell {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-left: 4px;
 }
 
 .fileName {
   font-size: 14px;
   color: var(--text-color-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
+.ownerCell {
+  width: 80px;
+  flex-shrink: 0;
+}
+
+.ownerText {
+  font-size: 13px;
+  color: var(--text-color-secondary);
+}
+
+.timeCell {
+  width: 120px;
+  flex-shrink: 0;
+}
+
+.timeText {
+  font-size: 13px;
+  color: var(--text-color-secondary);
+}
+
+/* ==================== 文档图标样式 ==================== */
 .docIcon {
   display: flex;
   align-items: center;
@@ -61,12 +248,57 @@
   }
 }
 
-.ownerText {
-  font-size: 13px;
-  color: var(--text-color-secondary);
+/* ==================== 子文件容器样式 ==================== */
+.childrenContainer {
+  /* 子文件列表不需要额外缩进，因为通过 paddingLeft 控制 */
 }
 
-.timeText {
-  font-size: 13px;
+/* ==================== 更多操作按钮样式 ==================== */
+.moreActionsCell {
+  width: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+  
+  /* 悬停时显示 */
+  &.visible {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+.moreButton {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 4px;
   color: var(--text-color-secondary);
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.06);
+    color: var(--text-color-primary);
+  }
+
+  /* 图标大小 */
+  :global(.anticon) {
+    font-size: 16px;
+  }
+}
+
+/* ==================== 拖拽过程中的全局效果 ==================== */
+/* 当存在拖拽操作时，禁用文字选择 */
+.fileList:has([draggable="true"]:active) {
+  user-select: none;
+
+  * {
+    user-select: none;
+  }
 }
