@@ -93,7 +93,7 @@ const FileList: React.FC<FileListProps> = ({
   /**
    * 生成文件夹的更多操作菜单
    */
-  const getFolderMenuItems = useCallback((item: FileItem): MenuProps['items'] => {
+  const getFolderMenuItems = useCallback((_item: FileItem): MenuProps['items'] => {
     return [
       {
         key: 'newFolder',
@@ -129,7 +129,7 @@ const FileList: React.FC<FileListProps> = ({
   /**
    * 生成文件的更多操作菜单
    */
-  const getFileMenuItems = useCallback((item: FileItem): MenuProps['items'] => {
+  const getFileMenuItems = useCallback((_item: FileItem): MenuProps['items'] => {
     return [
       {
         key: 'openInNewTab',

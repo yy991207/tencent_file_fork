@@ -12,7 +12,9 @@ import {
   CheckSquareOutlined,
   ShareAltOutlined,
   EditOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons';
+import { useRightSidebar } from '../../layouts/MainLayout';
 import styles from './index.module.less';
 
 /**
@@ -26,6 +28,8 @@ interface ToolItem {
 }
 
 const RightToolbar: React.FC = () => {
+  const { setIsRightSidebarOpen } = useRightSidebar();
+
   /**
    * 顶部工具列表
    */
@@ -36,6 +40,7 @@ const RightToolbar: React.FC = () => {
     { key: 'protect', icon: <FileProtectOutlined />, title: '文件保护' },
     { key: 'check', icon: <CheckSquareOutlined />, title: '待办事项' },
     { key: 'share', icon: <ShareAltOutlined />, title: '分享' },
+    { key: 'apps', icon: <AppstoreOutlined />, title: '应用', onClick: () => setIsRightSidebarOpen(true) },
   ];
 
   /**
