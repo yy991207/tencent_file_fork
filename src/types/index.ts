@@ -15,6 +15,7 @@ export enum FileType {
   VIDEO = 'video',        // 视频
   AUDIO = 'audio',        // 音频
   ARCHIVE = 'archive',    // 压缩包
+  MEETING = 'meeting',    // 会议记录
   OTHER = 'other',        // 其他类型
 }
 

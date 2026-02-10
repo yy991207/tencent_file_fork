@@ -21,6 +21,7 @@ import {
   CopyOutlined,
   AppstoreAddOutlined,
   DownloadOutlined,
+  VideoCameraOutlined,
 } from '@ant-design/icons';
 import { FileItem, FileType } from '../../types';
 import FolderIcon from '../FolderIcon';
@@ -244,6 +245,14 @@ const FileList: React.FC<FileListProps> = ({
   const renderFileIcon = (type: FileType) => {
     if (type === FileType.FOLDER) {
       return <FolderIcon size="small" />;
+    }
+    // 会议类型图标 - 橙色摄像头图标
+    if (type === FileType.MEETING) {
+      return (
+        <div className={styles.meetingIcon}>
+          <VideoCameraOutlined />
+        </div>
+      );
     }
     // 文档类型图标 - 蓝色背景的M图标
     return (

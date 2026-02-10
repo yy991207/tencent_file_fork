@@ -21,19 +21,21 @@ import {
   CloseOutlined,
   UnorderedListOutlined,
   ArrowLeftOutlined,
+  VideoCameraOutlined,
 } from '@ant-design/icons';
 import FolderIcon from '../../components/FolderIcon';
 import FileList from '../../components/FileList';
 import RightContent from '../../components/RightContent';
+import MeetingView from '../../components/MeetingView';
 import MemberManageDrawer from '../../components/MemberManageDrawer';
 import { useAppStore } from '../../store';
 import { FileItem, FileType } from '../../types';
 import styles from './index.module.less';
 
 /**
- * 文件夹树数据（收起状态显示）
+ * 生成文件夹树数据（收起状态显示）
  */
-const collapsedTreeData: TreeDataNode[] = [
+const buildCollapsedTreeData = (meetingName: string): TreeDataNode[] => [
   {
     title: (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
@@ -44,12 +46,18 @@ const collapsedTreeData: TreeDataNode[] = [
     key: 'clawd',
     icon: <FolderOutlined style={{ color: '#4A90D9' }} />,
   },
+  {
+    title: meetingName,
+    key: 'meeting_1',
+    icon: <VideoCameraOutlined style={{ color: '#1677FF' }} />,
+    isLeaf: true,
+  },
 ];
 
 /**
- * 目录树数据（目录树弹窗显示）
+ * 生成目录树数据（目录树弹窗显示）
  */
-const directoryTreeData: TreeDataNode[] = [
+const buildDirectoryTreeData = (meetingName: string): TreeDataNode[] => [
   {
     title: 'clawd',
     key: 'clawd',
@@ -67,6 +75,12 @@ const directoryTreeData: TreeDataNode[] = [
       { title: 'USER', key: 'USER', icon: <FileTextOutlined style={{ color: '#4285F4' }} />, isLeaf: true },
       { title: 'TOOLS', key: 'TOOLS', icon: <FileTextOutlined style={{ color: '#4285F4' }} />, isLeaf: true },
     ],
+  },
+  {
+    title: meetingName,
+    key: 'meeting_1',
+    icon: <VideoCameraOutlined style={{ color: '#1677FF' }} />,
+    isLeaf: true,
   },
 ];
 
@@ -198,6 +212,10 @@ const HomePage: React.FC = () => {
   const [selectedDocument, setSelectedDocument] = useState<FileItem | null>(null);
   // 置顶模式（固定左侧边栏，点击内容在右侧展开）
   const [pinnedMode, setPinnedMode] = useState(false);
+  // 当前选中的会议记录（用于右侧显示会议视图）
+  const [selectedMeeting, setSelectedMeeting] = useState<FileItem | null>(null);
+  // 会议显示名称（保存后同步到左侧树和右侧详情）
+  const [meetingDisplayName, setMeetingDisplayName] = useState('项目周会');
   // 置顶模式下选中的内容（文档或文件夹）
   const [pinnedSelectedItem, setPinnedSelectedItem] = useState<FileItem | null>(null);
 
@@ -217,6 +235,10 @@ const HomePage: React.FC = () => {
     });
     return map;
   }, [folderData]);
+
+  // 根据 meetingDisplayName 动态生成树数据
+  const collapsedTreeData = useMemo(() => buildCollapsedTreeData(meetingDisplayName), [meetingDisplayName]);
+  const directoryTreeData = useMemo(() => buildDirectoryTreeData(meetingDisplayName), [meetingDisplayName]);
 
   // 目录树弹窗的 ref，用于检测点击外部
   const treePopupRef = useRef<HTMLDivElement>(null);
@@ -435,6 +457,19 @@ const HomePage: React.FC = () => {
    */
   const handleFolderSelect = (selectedKeys: React.Key[]) => {
     if (selectedKeys.length > 0) {
+      const key = selectedKeys[0] as string;
+      if (key === 'meeting_1') {
+        // 点击会议记录，直接在右侧显示会议视图
+        setSelectedMeeting({
+          id: '10',
+          name: '项目周会',
+          type: FileType.MEETING,
+          owner: '我',
+          ownerId: 'user_001',
+          lastModified: '10:30',
+        });
+        return;
+      }
       setExpanded(true);
     }
   };
@@ -461,6 +496,11 @@ const HomePage: React.FC = () => {
    * 置顶模式下，内容在右侧面板显示，不覆盖文件列表
    */
   const handleFileClick = (file: FileItem) => {
+    if (file.type === FileType.MEETING) {
+      // 会议类型：在右侧显示会议视图
+      setSelectedMeeting(file);
+      return;
+    }
     if (pinnedMode) {
       // 置顶模式：在右侧面板显示内容
       setPinnedSelectedItem(file);
@@ -509,6 +549,19 @@ const HomePage: React.FC = () => {
   const handleTreeSelect = (selectedKeys: React.Key[]) => {
     if (selectedKeys.length > 0) {
       const selectedKey = selectedKeys[0] as string;
+      // 点击会议记录
+      if (selectedKey === 'meeting_1') {
+        setSelectedMeeting({
+          id: '10',
+          name: '项目周会',
+          type: FileType.MEETING,
+          owner: '我',
+          ownerId: 'user_001',
+          lastModified: '10:30',
+        });
+        setTreeVisible(false);
+        return;
+      }
       // 根据选择的节点更新文件夹路径
       if (selectedKey === 'clawd') {
         setFolderPath(['clawd']);
@@ -776,7 +829,18 @@ const HomePage: React.FC = () => {
       )}
 
       {/* ==================== 右侧内容区 ==================== */}
-      <RightContent />
+      {selectedMeeting ? (
+        <MeetingView
+          meetingName={meetingDisplayName}
+          onBack={() => setSelectedMeeting(null)}
+          onNameChange={(newName) => {
+            setMeetingDisplayName(newName);
+            setSelectedMeeting(prev => prev ? { ...prev, name: newName } : null);
+          }}
+        />
+      ) : (
+        <RightContent />
+      )}
     </div>
   );
 };

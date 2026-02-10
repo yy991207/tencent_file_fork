@@ -1,0 +1,562 @@
+/**
+ * 会议视图样式 — 蓝色主题
+ * 包含顶部导航、三个操作按钮、会议设置表单、会议详情视图
+ */
+.meetingView {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  height: 100%;
+  background-color: var(--bg-color-white);
+}
+
+/* ==================== 顶部导航栏 ==================== */
+.topNav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 24px;
+  background-color: var(--bg-color-white);
+  border-bottom: 1px solid var(--border-color-light);
+  flex-shrink: 0;
+}
+
+.navLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.meetingTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-color-primary);
+}
+
+.navRight {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 操作按钮通用样式 */
+.actionBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  padding: 0 12px;
+  font-size: 14px;
+  color: #1677FF !important;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: #E6F4FF;
+    color: #0958D9 !important;
+  }
+}
+
+/* 激活状态 */
+.actionBtnActive {
+  font-weight: 600;
+  background-color: #E6F4FF;
+  border-radius: 6px;
+}
+
+/* 主操作按钮（点击入会） */
+.actionBtnPrimary {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1677FF !important;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: #E6F4FF;
+    color: #0958D9 !important;
+  }
+}
+
+.navDivider {
+  width: 1px;
+  height: 20px;
+  background-color: var(--border-color);
+  margin: 0 8px;
+}
+
+.navIcon {
+  font-size: 18px;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+  padding: 4px;
+
+  &:hover {
+    color: #1677FF;
+  }
+}
+
+/* ==================== 主内容区域 ==================== */
+.mainArea {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+  background-color: #FAFAFA;
+}
+
+/* ==================== 会议设置表单 ==================== */
+.settingsForm {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 32px 40px 40px;
+  background: var(--bg-color-white);
+  min-height: 100%;
+}
+
+.formRow {
+  display: flex;
+  margin-bottom: 24px;
+}
+
+.formLabel {
+  width: 100px;
+  flex-shrink: 0;
+  padding-top: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-color-primary);
+  text-align: left;
+}
+
+.required {
+  color: #FF4D4F;
+}
+
+.formControl {
+  flex: 1;
+  min-width: 0;
+}
+
+.formInput {
+  height: 36px;
+  border-radius: 4px;
+}
+
+.formSelect {
+  :global {
+    .ant-select-selector {
+      height: 36px !important;
+      border-radius: 4px !important;
+    }
+  }
+}
+
+/* 时间行 */
+.timeRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dateInput {
+  width: 140px;
+  height: 36px;
+  border-radius: 4px;
+}
+
+.timeSelect {
+  width: 90px;
+
+  :global {
+    .ant-select-selector {
+      height: 36px !important;
+      border-radius: 4px !important;
+    }
+  }
+}
+
+.timeSeparator {
+  color: var(--text-color-tertiary);
+  margin: 0 4px;
+}
+
+.timeHint {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #E6F4FF;
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--text-color-secondary);
+}
+
+.upgradeLink {
+  color: #1677FF;
+  font-weight: 500;
+  cursor: pointer;
+
+  &:hover {
+    color: #0958D9;
+  }
+}
+
+.formDivider {
+  height: 1px;
+  background: var(--border-color-light);
+  margin: 8px 0 24px;
+}
+
+/* 内联值 */
+.inlineValue {
+  font-size: 14px;
+  color: var(--text-color-primary);
+  font-weight: 500;
+  margin-right: 8px;
+}
+
+/* Checkbox 行 */
+.checkItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  font-size: 14px;
+
+  :global {
+    .ant-checkbox-wrapper {
+      font-size: 14px;
+    }
+  }
+}
+
+.subOptions {
+  padding-left: 24px;
+  margin-top: 8px;
+}
+
+.infoIcon {
+  color: var(--text-color-tertiary);
+  font-size: 14px;
+  margin-left: 4px;
+  cursor: pointer;
+}
+
+.featureTag {
+  font-size: 11px;
+  line-height: 18px;
+  padding: 0 6px;
+  border-radius: 3px;
+  margin-left: 4px;
+}
+
+.upgradeArrow {
+  color: #52c41a;
+  font-size: 12px;
+  margin-left: 2px;
+}
+
+.settingHint {
+  margin: 0 0 10px 24px;
+  font-size: 12px;
+  color: var(--text-color-tertiary);
+}
+
+/* 静音选项区 */
+.muteSection {
+  margin: 12px 0;
+}
+
+.muteLabel {
+  display: block;
+  font-size: 14px;
+  color: var(--text-color-primary);
+  margin-bottom: 8px;
+}
+
+/* 底部按钮 */
+.formActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border-color-light);
+}
+
+.saveBtn {
+  height: 36px;
+  padding: 0 28px;
+  border-radius: 4px;
+  background: #1677FF;
+
+  &:hover {
+    background: #0958D9 !important;
+  }
+}
+
+.cancelBtn {
+  height: 36px;
+  padding: 0 28px;
+  border-radius: 4px;
+}
+
+/* ==================== 会议详情视图 ==================== */
+.detailsView {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 24px 32px 40px;
+}
+
+/* 详情卡片 */
+.detailCard {
+  padding: 24px;
+  background: #F0F7FF;
+  border-radius: 12px;
+  border-left: 4px solid #1677FF;
+  margin-bottom: 24px;
+}
+
+.detailTitle {
+  margin: 0 0 20px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-color-primary);
+  line-height: 1.4;
+}
+
+.externalTag {
+  font-size: 11px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.detailRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  font-size: 14px;
+  color: var(--text-color-primary);
+}
+
+.detailIcon {
+  font-size: 16px;
+  color: var(--text-color-tertiary);
+  flex-shrink: 0;
+}
+
+.calendarLink {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+
+  a {
+    color: #1677FF;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+
+    &:hover {
+      color: #0958D9;
+    }
+  }
+}
+
+.calendarIcon {
+  color: #1677FF;
+  font-size: 16px;
+}
+
+/* 详情段落 */
+.detailSection {
+  margin-bottom: 24px;
+}
+
+.sectionTitle {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: var(--text-color-tertiary);
+  font-weight: normal;
+}
+
+.sectionTitleDate {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: var(--text-color-tertiary);
+  font-weight: normal;
+}
+
+/* 纪要卡片 */
+.minutesCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-color-light);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+
+  &:hover {
+    border-color: #1677FF;
+  }
+}
+
+.minutesIcon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1677FF;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.minutesInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.minutesTitle {
+  font-size: 14px;
+  color: var(--text-color-primary);
+  font-weight: 500;
+}
+
+.minutesOwner {
+  font-size: 12px;
+  color: var(--text-color-tertiary);
+}
+
+/* 录制卡片 */
+.recordingCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+}
+
+.recordingThumbnail {
+  width: 100px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.recordingPlayIcon {
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.recordingInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.recordingTitle {
+  font-size: 14px;
+  color: var(--text-color-primary);
+  font-weight: 500;
+}
+
+.recordingOwner {
+  font-size: 12px;
+  color: var(--text-color-tertiary);
+}
+
+/* 时间线 */
+.timeline {
+  padding-left: 0;
+}
+
+.timelineItem {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 0;
+  font-size: 14px;
+  color: var(--text-color-primary);
+}
+
+.timelineTime {
+  font-size: 14px;
+  color: var(--text-color-primary);
+  font-weight: 500;
+  width: 40px;
+  flex-shrink: 0;
+}
+
+.personLink {
+  color: #1677FF;
+  font-weight: 500;
+  cursor: pointer;
+
+  &:hover {
+    color: #0958D9;
+  }
+}
+
+/* ==================== 参会人员浮窗 ==================== */
+.participantPopover {
+  :global {
+    .ant-popover-inner {
+      padding: 8px 0;
+      border-radius: 12px;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+    }
+  }
+}
+
+.participantList {
+  width: 260px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.participantItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  transition: background-color 0.15s;
+
+  &:hover {
+    background-color: #F5F5F5;
+  }
+}
+
+.participantName {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-color-primary);
+  white-space: nowrap;
+}
+
+.participantTag {
+  font-size: 12px;
+  line-height: 20px;
+  padding: 0 8px;
+  border-radius: 4px;
+  margin-left: 0;
+  flex-shrink: 0;
+}
