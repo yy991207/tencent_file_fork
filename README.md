@@ -1,5 +1,7 @@
 # 腾讯文档 UI 仿制项目
 
+![首页展示](img/home.png)
+
 基于 React 19 + Ant Design 6 + TypeScript 构建的腾讯文档风格 UI 界面。
 
 ## 功能特性
