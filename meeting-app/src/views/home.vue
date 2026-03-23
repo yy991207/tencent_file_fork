@@ -39,7 +39,7 @@ const handleLogout = () => {
   router.push('/login');
 };
 
-const handleCreateRoom = async (roomId: string, roomType: TUIRoomType, options?: { roomName?: string; password?: string; isOpenCamera?: boolean; isOpenMicrophone?: boolean }) => {
+const handleCreateRoom = async (roomId: string, roomType: TUIRoomType, options?: { roomName?: string; password?: string; isOpenCamera?: boolean; isOpenMicrophone?: boolean; isMicrophoneDisableForAllUser?: boolean; isCameraDisableForAllUser?: boolean }) => {
   sessionStorage.setItem(`room-${roomId}-isCreate`, 'true');
   router.push({
     path: '/room',
@@ -50,6 +50,8 @@ const handleCreateRoom = async (roomId: string, roomType: TUIRoomType, options?:
       ...(options?.password && { password: options.password }),
       isOpenCamera: String(options?.isOpenCamera ?? true),
       isOpenMicrophone: String(options?.isOpenMicrophone ?? true),
+      isMicrophoneDisableForAllUser: String(options?.isMicrophoneDisableForAllUser ?? false),
+      isCameraDisableForAllUser: String(options?.isCameraDisableForAllUser ?? false),
     },
   });
 };
@@ -75,6 +77,8 @@ onMounted(() => {
       password: data.password,
       isOpenCamera: data.isOpenCamera,
       isOpenMicrophone: data.isOpenMicrophone,
+      isMicrophoneDisableForAllUser: data.isMicrophoneDisableForAllUser,
+      isCameraDisableForAllUser: data.isCameraDisableForAllUser,
     });
   });
 });

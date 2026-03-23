@@ -37,6 +37,8 @@ export interface CreateMeetingPayload {
   password?: string;
   isOpenCamera?: boolean;
   isOpenMicrophone?: boolean;
+  isMicrophoneDisableForAllUser?: boolean;
+  isCameraDisableForAllUser?: boolean;
 }
 
 export interface JoinMeetingPayload {

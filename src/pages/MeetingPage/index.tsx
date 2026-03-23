@@ -19,6 +19,8 @@ export default function MeetingPage() {
   const action = searchParams.get('action') as 'start' | 'join' | null;
   const roomId = searchParams.get('roomId');
   const roomName = searchParams.get('roomName');
+  const isMicrophoneDisableForAllUser = searchParams.get('isMicrophoneDisableForAllUser') === 'true';
+  const isCameraDisableForAllUser = searchParams.get('isCameraDisableForAllUser') === 'true';
 
   // 向 iframe 内的 Vue 应用发送消息
   const sendToChild = useCallback(<T>(type: ToChildEvent, data?: T) => {
@@ -39,6 +41,8 @@ export default function MeetingPage() {
               roomId,
               roomType: 1,
               roomName: roomName ? decodeURIComponent(roomName) : undefined,
+              isMicrophoneDisableForAllUser,
+              isCameraDisableForAllUser,
             };
             sendToChild(ToChildEvent.CREATE_MEETING, payload);
           }
@@ -68,7 +72,7 @@ export default function MeetingPage() {
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [navigate, action, roomId, roomName, sendToChild]);
+  }, [navigate, action, roomId, roomName, isMicrophoneDisableForAllUser, isCameraDisableForAllUser, sendToChild]);
 
   return (
     <div className={styles.meetingPage}>

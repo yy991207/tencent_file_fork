@@ -35,17 +35,21 @@ const { muteMicrophone, unmuteMicrophone } = useRoomParticipantState();
 
 const { getMicrophonePreference, getCameraPreference } = useMediaPreference();
 
-const { roomId, password, roomType: roomTypeString, roomName, isOpenCamera: isOpenCameraStr, isOpenMicrophone: isOpenMicrophoneStr } = route.query as {
+const { roomId, password, roomType: roomTypeString, roomName, isOpenCamera: isOpenCameraStr, isOpenMicrophone: isOpenMicrophoneStr, isMicrophoneDisableForAllUser: isMuteAllStr, isCameraDisableForAllUser: isCameraDisabledStr } = route.query as {
   roomId: string;
   password?: string;
   roomType: string;
   roomName?: string;
   isOpenCamera?: string;
   isOpenMicrophone?: string;
+  isMicrophoneDisableForAllUser?: string;
+  isCameraDisableForAllUser?: string;
 };
 const roomType = Number(roomTypeString) as RoomType;
 const isOpenCameraParam = isOpenCameraStr !== 'false';
 const isOpenMicrophoneParam = isOpenMicrophoneStr !== 'false';
+const isMicrophoneDisableForAllUser = isMuteAllStr === 'true';
+const isCameraDisableForAllUser = isCameraDisabledStr === 'true';
 
 if (!roomId) {
   router.replace('/home');
@@ -96,6 +100,8 @@ async function handleStartConference() {
       password,
       isOpenCamera: isOpenCameraParam,
       isOpenMicrophone: isOpenMicrophoneParam,
+      isMicrophoneDisableForAllUser,
+      isCameraDisableForAllUser,
     },
   });
   notifyParent(ToParentEvent.MEETING_STARTED, { roomId, isHost: true });
