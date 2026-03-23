@@ -45,4 +45,5 @@ export interface JoinMeetingPayload {
   password?: string;
 }
 
-export const MEETING_APP_ORIGIN = 'http://localhost:5173';
+// 与 iframe 同域（通过 Vite proxy 统一在 5006 提供），直接用当前页面 origin
+export const MEETING_APP_ORIGIN = window.location.origin;

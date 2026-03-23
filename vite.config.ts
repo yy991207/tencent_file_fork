@@ -7,11 +7,23 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5006,
+    proxy: {
+      // 将 /meeting-app/** 代理到 Vue 子应用，iframe src 改用 /meeting-app/
+      '/meeting-app': {
+        target: 'http://localhost:5173',
+        ws: true,        // 同时代理 WebSocket（Vite HMR）
+        changeOrigin: true,
+      },
+    },
   },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+  },
+  // 明确入口，防止 Vite 把 meeting-app/index.html 也当成 React 项目入口扫描
+  optimizeDeps: {
+    entries: ['index.html'],
   },
   css: {
     preprocessorOptions: {

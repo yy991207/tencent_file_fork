@@ -7,14 +7,11 @@ const path = require('path');
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  // Static Resource Base Path base: './' || '',
-  base: process.env.NODE_ENV === 'production' ? './' : '/',
+  // 固定为 /meeting-app/，由 React 主应用 Vite dev server 代理至此端口
+  base: '/meeting-app/',
   server: {
     port: 5173,
-    headers: {
-      // 允许被 React 主应用 (localhost:5006) 的 iframe 嵌入
-      'Access-Control-Allow-Origin': 'http://localhost:5006',
-    },
+    strictPort: true, // 端口被占用时直接报错，而非静默切换到 5174
   },
   resolve: {
     alias: {
@@ -23,6 +20,9 @@ export default defineConfig({
   },
   build: {
     target: 'esnext',
+    // 产物输出到 React 主应用 public 目录，npm run build 时一并打包进去
+    outDir: '../public/meeting-app',
+    emptyOutDir: true,
     rollupOptions: {
       output: {
         // Custom Split Strategy

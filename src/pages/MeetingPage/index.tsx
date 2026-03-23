@@ -74,7 +74,7 @@ export default function MeetingPage() {
     <div className={styles.meetingPage}>
       <iframe
         ref={iframeRef}
-        src={MEETING_APP_ORIGIN}
+        src="/meeting-app/"
         className={styles.meetingFrame}
         allow="microphone; camera; display-capture; display; fullscreen"
         title="会议"
