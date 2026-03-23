@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "postinstall": "cd meeting-app && npm install",
     "dev": "concurrently --names meeting,react --prefix-colors green,cyan \"npm run dev:meeting\" \"vite\"",
     "dev:meeting": "cd meeting-app && npm run dev",
     "build": "npm run build:meeting && tsc && vite build",
