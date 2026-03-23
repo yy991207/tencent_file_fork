@@ -26,6 +26,8 @@ import {
   UserOutlined,
   MutedOutlined,
   EyeInvisibleOutlined,
+  NumberOutlined,
+  FileTextOutlined,
 } from '@ant-design/icons';
 import { MaterialItem } from '../../types';
 import SelectPeopleModal from '../SelectPeople';
@@ -461,7 +463,7 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
               onClick={handleStartLive}
               disabled={!saved}
             >
-              {isSeminar ? '点击进入' : '开始直播'}
+              点击进入
             </Button>
             <Button size="large" onClick={() => setActiveTab('settings')}>
               返回设置
@@ -472,62 +474,127 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
     );
   };
 
-  const renderDetails = () => (
-    <div className={styles.detailsView}>
-      <div className={styles.detailCard}>
-        <h2 className={styles.detailTitle}>
-          {isSeminar
-            ? <TeamOutlined style={{ color: '#4A90D9', marginRight: 8 }} />
-            : <PlayCircleOutlined style={{ color: '#F56C6C', marginRight: 8 }} />
-          }
-          {roomName || `未命名${typeLabel}`}
-        </h2>
-        <div className={styles.detailRow}>
-          <CalendarOutlined className={styles.detailIcon} />
-          <span>{startDate} {startTime}（{TIMEZONE_OPTIONS.find(o => o.value === timezone)?.label}）</span>
+  const renderDetails = () => {
+    const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+    const AVATAR_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+    const getAvatarColor = (name: string) => {
+      let h = 0;
+      for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+      return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
+    };
+    const formatDate = (d: string) => {
+      const [y, m, day] = d.split('-');
+      return `${y}年${m}月${day}日`;
+    };
+    const dateObj = new Date(startDate);
+    const weekday = WEEKDAYS[dateObj.getDay()];
+    const displayDate = formatDate(startDate);
+    const durationLabel = DURATION_OPTIONS.find(o => o.value === duration)?.label ?? '';
+    // 用房间名生成伪 ID（演示用）
+    const fakeId = [3, 3, 3].map((_, i) =>
+      String(Math.abs(roomName.split('').reduce((a, c) => a + c.charCodeAt(0), i * 137)) % 1000).padStart(3, '0')
+    ).join(' ');
+
+    if (!saved) {
+      return (
+        <div className={styles.detailsView}>
+          <div className={styles.detailEmpty}>请先在「{typeLabel}设置」中填写信息并保存。</div>
         </div>
-        <div className={styles.detailRow}>
-          <ClockCircleOutlined className={styles.detailIcon} />
-          <span>{DURATION_OPTIONS.find(o => o.value === duration)?.label}</span>
+      );
+    }
+
+    return (
+      <div className={styles.detailsView}>
+
+        {/* ── 信息卡 ── */}
+        <div className={styles.detailInfoCard}>
+          <div className={styles.detailMeetingTitle}>
+            {roomName || `未命名${typeLabel}`}
+            <span className={styles.detailTypeBadge} data-type={isSeminar ? 'seminar' : 'live'}>
+              {isSeminar ? '普通会议' : '网络研讨会'}
+            </span>
+          </div>
+
+          <div className={styles.detailMetaRow}>
+            <ClockCircleOutlined className={styles.detailMetaIcon} />
+            <span>{displayDate}（{weekday}）{startTime}
+              {durationLabel && <span className={styles.detailMetaSep}>|</span>}
+              {durationLabel}
+            </span>
+          </div>
+
+          <div className={styles.detailMetaRow}>
+            <NumberOutlined className={styles.detailMetaIcon} />
+            <span>会议 ID：{fakeId}</span>
+          </div>
+
+          {selectedAttendeeObjects.length > 0 && (
+            <div className={styles.detailMetaRow}>
+              <UserOutlined className={styles.detailMetaIcon} />
+              <div className={styles.detailAvatarList}>
+                {selectedAttendeeObjects.slice(0, 5).map(u => (
+                  <div
+                    key={u.id}
+                    className={styles.detailAvatar}
+                    style={{ background: getAvatarColor(u.name) }}
+                    title={u.name}
+                  >
+                    {u.name.slice(0, 1)}
+                  </div>
+                ))}
+                {selectedAttendeeObjects.length > 5 && (
+                  <div className={styles.detailAvatarMore}>+{selectedAttendeeObjects.length - 5}</div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className={styles.detailMetaRow}>
+            <CalendarOutlined className={styles.detailMetaIcon} />
+            <a className={styles.detailCalLink}>在日历中查看详情</a>
+          </div>
         </div>
-        {attendees && (
-          <div className={styles.detailRow}>
-            <TeamOutlined className={styles.detailIcon} />
-            <span>参会成员：{attendees}</span>
+
+        {/* ── 会议纪要 ── */}
+        <div className={styles.detailSectionTitle}>会议纪要</div>
+        <div className={styles.detailFileCard}>
+          <div className={styles.detailFileIconWrap} data-color="blue">
+            <FileTextOutlined />
           </div>
-        )}
-        <div className={styles.detailRow}>
-          <VideoCameraOutlined className={styles.detailIcon} />
-          <span>摄像头：{isOpenCamera ? '默认开启' : '默认关闭'}</span>
+          <div className={styles.detailFileInfo}>
+            <div className={styles.detailFileName}>智能纪要：{roomName || typeLabel}</div>
+            <div className={styles.detailFileOwner}>所有者：我</div>
+          </div>
         </div>
-        <div className={styles.detailRow}>
-          <AudioOutlined className={styles.detailIcon} />
-          <span>麦克风：{isOpenMicrophone ? '默认开启' : '默认关闭'}</span>
+
+        {/* ── 录制文件 ── */}
+        <div className={styles.detailSectionTitle}>录制文件（妙记）</div>
+        <div className={styles.detailFileCard}>
+          <div className={styles.detailRecordThumb}>
+            <VideoCameraOutlined />
+          </div>
+          <div className={styles.detailFileInfo}>
+            <div className={styles.detailFileName}>{roomName || typeLabel}</div>
+            <div className={styles.detailFileOwner}>所有者：我</div>
+          </div>
         </div>
-        {isMicrophoneDisableForAllUser && (
-          <div className={styles.detailRow}>
-            <MutedOutlined className={styles.detailIcon} />
-            <span>全体静音</span>
+
+        {/* ── 活动时间线 ── */}
+        <div className={styles.detailTimelineDate}>{displayDate}</div>
+        <div className={styles.detailTimeline}>
+          <div className={styles.detailTimelineItem}>
+            <span className={styles.detailTimelineTime}>{startTime}</span>
+            <span>创建{typeLabel}</span>
           </div>
-        )}
-        {isCameraDisableForAllUser && (
-          <div className={styles.detailRow}>
-            <EyeInvisibleOutlined className={styles.detailIcon} />
-            <span>全体静画</span>
+          <div className={styles.detailTimelineItem}>
+            <span className={styles.detailTimelineTime}>{startTime}</span>
+            <span>来自 <a className={styles.detailCalLink}>我</a> 的会中呼叫</span>
           </div>
-        )}
-        {passwordEnabled && password && (
-          <div className={styles.detailRow}>
-            <LockOutlined className={styles.detailIcon} />
-            <span>已设置入会密码</span>
-          </div>
-        )}
-        {!saved && (
-          <p className={styles.detailEmpty}>请先在「{typeLabel}设置」中填写信息并保存。</p>
-        )}
+        </div>
+
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className={styles.materialView}>
@@ -556,7 +623,7 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
             type="link"
             onClick={() => setActiveTab('launch')}
           >
-            {isSeminar ? '点击进入' : '开始直播'}
+            点击进入
           </Button>
           <Button
             className={`${styles.actionBtn} ${activeTab === 'details' ? styles.actionBtnActive : ''}`}
