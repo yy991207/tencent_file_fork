@@ -267,6 +267,45 @@
   color: var(--text-color-tertiary);
 }
 
+/* ==================== 参会成员标签框 ==================== */
+.attendeesBox {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  background: #fff;
+  cursor: text;
+  transition: border-color 0.2s;
+
+  &:hover {
+    border-color: #4096ff;
+  }
+}
+
+.attendeeTag {
+  margin: 0;
+  font-size: 13px;
+  border-radius: 4px;
+}
+
+.attendeesAddBtn {
+  color: #1677ff;
+  cursor: pointer;
+  font-size: 15px;
+  margin-left: auto;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #e6f4ff;
+  }
+}
+
 .fieldHint {
   margin-top: 4px;
   font-size: 11px;

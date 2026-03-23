@@ -7,7 +7,7 @@
  */
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Checkbox, Input, Select, Switch, Tooltip } from 'antd';
+import { Button, Checkbox, Input, Select, Switch, Tag, Tooltip } from 'antd';
 import {
   SettingOutlined,
   LoginOutlined,
@@ -28,6 +28,7 @@ import {
   EyeInvisibleOutlined,
 } from '@ant-design/icons';
 import { MaterialItem } from '../../types';
+import SelectPeopleModal from '../SelectPeople';
 import styles from './index.module.less';
 
 type MaterialTab = 'settings' | 'details';
@@ -99,6 +100,10 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
   const [timezone, setTimezone] = useState('UTC+08:00');
   /** scheduleAttendees（userId 逗号分隔） */
   const [attendees, setAttendees] = useState('');
+  /** 已选人员对象列表（用于回显姓名） */
+  const [selectedAttendeeObjects, setSelectedAttendeeObjects] = useState<{ id: string; name: string }[]>([]);
+  /** 选人弹窗开关 */
+  const [selectPeopleOpen, setSelectPeopleOpen] = useState(false);
 
   const [saved, setSaved] = useState(false);
 
@@ -211,16 +216,42 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
           参会成员
         </label>
         <div className={styles.formControl}>
-          <Input
-            value={attendees}
-            onChange={(e) => setAttendees(e.target.value)}
-            placeholder="请输入参会成员名称"
-            className={styles.formInput}
-            suffix={<TeamOutlined style={{ color: '#999' }} />}
-          />
+          <div className={styles.attendeesBox}>
+            {selectedAttendeeObjects.map((u) => (
+              <Tag
+                key={u.id}
+                closable
+                onClose={() =>
+                  setSelectedAttendeeObjects((prev) => prev.filter((p) => p.id !== u.id))
+                }
+                className={styles.attendeeTag}
+              >
+                {u.name}
+              </Tag>
+            ))}
+            <TeamOutlined
+              className={styles.attendeesAddBtn}
+              onClick={() => setSelectPeopleOpen(true)}
+            />
+          </div>
           <div className={styles.fieldHint}>对应 RTC 参数：<code>scheduleAttendees</code>（userId 列表，Schedule API）</div>
         </div>
       </div>
+
+      <SelectPeopleModal
+        open={selectPeopleOpen}
+        onCancel={() => setSelectPeopleOpen(false)}
+        onConfirm={({ users, depts }) => {
+          // 合并已有 + 新选，去重
+          const merged = [...selectedAttendeeObjects];
+          [...users, ...depts].forEach((p) => {
+            if (!merged.find((m) => m.id === p.id)) merged.push(p);
+          });
+          setSelectedAttendeeObjects(merged);
+          setAttendees(merged.map((p) => p.name).join('、'));
+          setSelectPeopleOpen(false);
+        }}
+      />
 
       <div className={styles.formDivider} />
 
