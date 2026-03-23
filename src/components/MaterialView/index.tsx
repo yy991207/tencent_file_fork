@@ -31,7 +31,7 @@ import { MaterialItem } from '../../types';
 import SelectPeopleModal from '../SelectPeople';
 import styles from './index.module.less';
 
-type MaterialTab = 'settings' | 'details';
+type MaterialTab = 'settings' | 'launch' | 'details';
 
 interface MaterialViewProps {
   item: MaterialItem;
@@ -343,6 +343,135 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
     </div>
   );
 
+  const renderLaunch = () => {
+    const durationLabel = DURATION_OPTIONS.find(o => o.value === duration)?.label ?? '';
+    const tzLabel = TIMEZONE_OPTIONS.find(o => o.value === timezone)?.label ?? timezone;
+
+    return (
+      <div className={styles.launchView}>
+        {/* ── 未保存提示 ── */}
+        {!saved && (
+          <div className={styles.launchNotice}>
+            <InfoCircleOutlined style={{ marginRight: 6 }} />
+            请先在「{typeLabel}设置」中填写信息并保存，再进入{typeLabel}。
+            <Button type="link" size="small" onClick={() => setActiveTab('settings')} style={{ padding: '0 4px' }}>
+              去设置
+            </Button>
+          </div>
+        )}
+
+        <div className={styles.launchCard}>
+          {/* ── 标题区 ── */}
+          <div className={styles.launchHeader}>
+            <div className={styles.launchIconWrap}>
+              {isSeminar
+                ? <TeamOutlined style={{ fontSize: 28, color: '#4A90D9' }} />
+                : <VideoCameraOutlined style={{ fontSize: 28, color: '#F56C6C' }} />
+              }
+            </div>
+            <div className={styles.launchMeta}>
+              <div className={styles.launchTitle}>{roomName || `未命名${typeLabel}`}</div>
+              <span className={styles.launchBadge} data-type={isSeminar ? 'seminar' : 'live'}>
+                {isSeminar ? '普通会议' : '网络研讨会'}
+              </span>
+            </div>
+          </div>
+
+          {/* ── 会议信息 ── */}
+          <div className={styles.launchSection}>
+            <div className={styles.launchSectionTitle}>会议信息</div>
+            <div className={styles.launchInfoList}>
+              <div className={styles.launchInfoRow}>
+                <CalendarOutlined className={styles.launchInfoIcon} />
+                <span className={styles.launchInfoLabel}>开始时间</span>
+                <span className={styles.launchInfoValue}>{startDate} {startTime} <span className={styles.launchTz}>{tzLabel}</span></span>
+              </div>
+              <div className={styles.launchInfoRow}>
+                <ClockCircleOutlined className={styles.launchInfoIcon} />
+                <span className={styles.launchInfoLabel}>会议时长</span>
+                <span className={styles.launchInfoValue}>{durationLabel}</span>
+              </div>
+              <div className={styles.launchInfoRow}>
+                <TeamOutlined className={styles.launchInfoIcon} />
+                <span className={styles.launchInfoLabel}>参会成员</span>
+                <span className={styles.launchInfoValue}>
+                  {selectedAttendeeObjects.length > 0
+                    ? selectedAttendeeObjects.map(u => (
+                        <Tag key={u.id} className={styles.launchAttendeTag}>{u.name}</Tag>
+                      ))
+                    : <span className={styles.launchEmpty}>暂未添加</span>
+                  }
+                </span>
+              </div>
+              <div className={styles.launchInfoRow}>
+                <LockOutlined className={styles.launchInfoIcon} />
+                <span className={styles.launchInfoLabel}>入会密码</span>
+                <span className={styles.launchInfoValue}>
+                  {passwordEnabled && password
+                    ? <><span className={styles.dotOn} />已设置</>
+                    : <><span className={styles.dotOff} />无需密码</>
+                  }
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* ── 设备设置 ── */}
+          <div className={styles.launchSection}>
+            <div className={styles.launchSectionTitle}>设备设置</div>
+            <div className={styles.launchDeviceGrid}>
+              <div className={styles.launchDeviceItem}>
+                <VideoCameraOutlined className={styles.launchDeviceIcon} />
+                <span className={styles.launchDeviceName}>摄像头</span>
+                <span className={isOpenCamera ? styles.statusOn : styles.statusOff}>
+                  {isOpenCamera ? '入会开启' : '入会关闭'}
+                </span>
+              </div>
+              <div className={styles.launchDeviceItem}>
+                <AudioOutlined className={styles.launchDeviceIcon} />
+                <span className={styles.launchDeviceName}>麦克风</span>
+                <span className={isOpenMicrophone ? styles.statusOn : styles.statusOff}>
+                  {isOpenMicrophone ? '入会开启' : '入会关闭'}
+                </span>
+              </div>
+              <div className={styles.launchDeviceItem}>
+                <MutedOutlined className={styles.launchDeviceIcon} />
+                <span className={styles.launchDeviceName}>全体静音</span>
+                <span className={isMicrophoneDisableForAllUser ? styles.statusWarn : styles.statusOff}>
+                  {isMicrophoneDisableForAllUser ? '已开启' : '未开启'}
+                </span>
+              </div>
+              <div className={styles.launchDeviceItem}>
+                <EyeInvisibleOutlined className={styles.launchDeviceIcon} />
+                <span className={styles.launchDeviceName}>全体静画</span>
+                <span className={isCameraDisableForAllUser ? styles.statusWarn : styles.statusOff}>
+                  {isCameraDisableForAllUser ? '已开启' : '未开启'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* ── 操作按钮 ── */}
+          <div className={styles.launchActions}>
+            <Button
+              type="primary"
+              size="large"
+              className={styles.launchEnterBtn}
+              icon={isSeminar ? <LoginOutlined /> : <PlayCircleOutlined />}
+              onClick={handleStartLive}
+              disabled={!saved}
+            >
+              {isSeminar ? '点击进入' : '开始直播'}
+            </Button>
+            <Button size="large" onClick={() => setActiveTab('settings')}>
+              返回设置
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderDetails = () => (
     <div className={styles.detailsView}>
       <div className={styles.detailCard}>
@@ -422,11 +551,10 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
             {typeLabel}设置
           </Button>
           <Button
-            className={styles.actionBtnPrimary}
+            className={`${styles.actionBtnPrimary} ${activeTab === 'launch' ? styles.actionBtnActive : ''}`}
             icon={isSeminar ? <LoginOutlined /> : <PlayCircleOutlined />}
             type="link"
-            onClick={handleStartLive}
-            disabled={!saved}
+            onClick={() => setActiveTab('launch')}
           >
             {isSeminar ? '点击进入' : '开始直播'}
           </Button>
@@ -445,7 +573,7 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
       </div>
 
       <div className={styles.mainArea}>
-        {activeTab === 'settings' ? renderSettings() : renderDetails()}
+        {activeTab === 'settings' ? renderSettings() : activeTab === 'launch' ? renderLaunch() : renderDetails()}
       </div>
     </div>
   );
