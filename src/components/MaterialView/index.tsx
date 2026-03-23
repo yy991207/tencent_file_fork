@@ -374,7 +374,7 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
             <div className={styles.launchMeta}>
               <div className={styles.launchTitle}>{roomName || `未命名${typeLabel}`}</div>
               <span className={styles.launchBadge} data-type={isSeminar ? 'seminar' : 'live'}>
-                {isSeminar ? '普通会议' : '网络研讨会'}
+                {isSeminar ? '研讨会' : '直播'}
               </span>
             </div>
           </div>
@@ -511,7 +511,7 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
           <div className={styles.detailMeetingTitle}>
             {roomName || `未命名${typeLabel}`}
             <span className={styles.detailTypeBadge} data-type={isSeminar ? 'seminar' : 'live'}>
-              {isSeminar ? '普通会议' : '网络研讨会'}
+              {isSeminar ? '研讨会' : '直播'}
             </span>
           </div>
 
