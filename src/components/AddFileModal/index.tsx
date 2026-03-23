@@ -11,6 +11,8 @@ import {
   FileTextOutlined,
   ScissorOutlined,
   CopyOutlined,
+  TeamOutlined,
+  PlayCircleOutlined,
 } from '@ant-design/icons';
 import { useAppStore } from '../../store';
 import styles from './index.module.less';
@@ -120,6 +122,8 @@ const AddFileModal: React.FC = () => {
           <div className={styles.cardButtons}>
             <Button icon={<ScissorOutlined />}>网页剪存</Button>
             <Button icon={<CopyOutlined />}>粘贴文本</Button>
+            <Button icon={<TeamOutlined style={{ color: '#4A90D9' }} />}>研讨会</Button>
+            <Button icon={<PlayCircleOutlined style={{ color: '#F56C6C' }} />}>直播</Button>
           </div>
         </div>
       </div>
