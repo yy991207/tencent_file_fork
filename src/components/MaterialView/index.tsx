@@ -145,7 +145,6 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
             className={styles.formInput}
             placeholder={`请输入${typeLabel}主题`}
           />
-          <div className={styles.fieldHint}>对应 RTC 参数：<code>roomName</code></div>
         </div>
       </div>
 
@@ -171,7 +170,6 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
               popupMatchSelectWidth={false}
             />
           </div>
-          <div className={styles.fieldHint}>对应 RTC 参数：<code>scheduleStartTime</code>（Unix 时间戳，Schedule API）</div>
         </div>
       </div>
 
@@ -188,7 +186,6 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
             options={DURATION_OPTIONS}
             className={styles.formSelect}
           />
-          <div className={styles.fieldHint}>对应 RTC 参数：<code>scheduleDuration</code>（秒，Schedule API）</div>
         </div>
       </div>
 
@@ -205,7 +202,6 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
             options={TIMEZONE_OPTIONS}
             className={styles.formSelect}
           />
-          <div className={styles.fieldHint}>影响 <code>scheduleStartTime</code> 时间戳计算（display only）</div>
         </div>
       </div>
 
@@ -234,7 +230,6 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
               onClick={() => setSelectPeopleOpen(true)}
             />
           </div>
-          <div className={styles.fieldHint}>对应 RTC 参数：<code>scheduleAttendees</code>（userId 列表，Schedule API）</div>
         </div>
       </div>
 
@@ -282,7 +277,6 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
                 className={styles.formInput}
                 maxLength={20}
               />
-              <div className={styles.fieldHint}>对应 RTC 参数：<code>password</code></div>
             </div>
           )}
         </div>
@@ -299,9 +293,6 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
             >
               全体静音
             </Checkbox>
-            <span className={styles.fieldHint} style={{ display: 'inline', marginLeft: 8 }}>
-              <code>isMicrophoneDisableForAllUser</code>
-            </span>
           </div>
           <div className={styles.checkItem}>
             <Checkbox
@@ -310,9 +301,6 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
             >
               全体静画
             </Checkbox>
-            <span className={styles.fieldHint} style={{ display: 'inline', marginLeft: 8 }}>
-              <code>isCameraDisableForAllUser</code>
-            </span>
           </div>
         </div>
       </div>
@@ -329,7 +317,6 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
         </label>
         <div className={styles.formControl}>
           <Switch checked={isOpenCamera} onChange={setIsOpenCamera} />
-          <div className={styles.fieldHint}>对应 RTC 参数：<code>isOpenCamera</code></div>
         </div>
       </div>
 
@@ -344,7 +331,6 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
         </label>
         <div className={styles.formControl}>
           <Switch checked={isOpenMicrophone} onChange={setIsOpenMicrophone} />
-          <div className={styles.fieldHint}>对应 RTC 参数：<code>isOpenMicrophone</code></div>
         </div>
       </div>
 

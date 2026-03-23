@@ -124,6 +124,44 @@
   color: var(--text-color-primary);
 }
 
+.cardButtonsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+
+  :global {
+    .ant-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 32px;
+      padding: 0 12px;
+      font-size: 13px;
+      width: 100%;
+      justify-content: flex-start;
+    }
+  }
+}
+
+.cardButtonsCol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  :global {
+    .ant-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 32px;
+      padding: 0 12px;
+      font-size: 13px;
+      width: 100%;
+      justify-content: flex-start;
+    }
+  }
+}
+
 .cardButtons {
   display: flex;
   gap: 8px;

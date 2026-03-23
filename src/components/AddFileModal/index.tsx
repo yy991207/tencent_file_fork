@@ -9,10 +9,10 @@ import {
   MessageOutlined,
   CloudOutlined,
   FileTextOutlined,
-  ScissorOutlined,
-  CopyOutlined,
+  SnippetsOutlined,
+  ContainerOutlined,
   TeamOutlined,
-  PlayCircleOutlined,
+  VideoCameraOutlined,
 } from '@ant-design/icons';
 import { useAppStore } from '../../store';
 import styles from './index.module.less';
@@ -106,7 +106,7 @@ const AddFileModal: React.FC = () => {
         {/* 从云端选择 */}
         <div className={styles.optionCard}>
           <h4 className={styles.cardTitle}>从云端选择</h4>
-          <div className={styles.cardButtons}>
+          <div className={styles.cardButtonsCol}>
             <Button icon={<CloudOutlined style={{ color: '#4A90D9' }} />}>
               微云
             </Button>
@@ -119,11 +119,11 @@ const AddFileModal: React.FC = () => {
         {/* 其它方式 */}
         <div className={styles.optionCard}>
           <h4 className={styles.cardTitle}>其它方式</h4>
-          <div className={styles.cardButtons}>
-            <Button icon={<ScissorOutlined />}>网页剪存</Button>
-            <Button icon={<CopyOutlined />}>粘贴文本</Button>
+          <div className={styles.cardButtonsGrid}>
+            <Button icon={<SnippetsOutlined style={{ color: '#F59E0B' }} />}>网页剪存</Button>
+            <Button icon={<ContainerOutlined style={{ color: '#6366F1' }} />}>粘贴文本</Button>
             <Button icon={<TeamOutlined style={{ color: '#4A90D9' }} />} onClick={() => { addMaterialItem('seminar'); handleClose(); }}>研讨会</Button>
-            <Button icon={<PlayCircleOutlined style={{ color: '#F56C6C' }} />} onClick={() => { addMaterialItem('live'); handleClose(); }}>直播</Button>
+            <Button icon={<VideoCameraOutlined style={{ color: '#F56C6C' }} />} onClick={() => { addMaterialItem('live'); handleClose(); }}>直播</Button>
           </div>
         </div>
       </div>
