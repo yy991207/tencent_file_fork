@@ -3,19 +3,23 @@
  * 对应设计稿中的"页面3_目录树展开页面"
  * 展开目录树弹窗显示文件结构
  */
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Tree, Button, Space } from 'antd';
-import type { TreeDataNode } from 'antd';
+import { Tree, Button, Space, Dropdown, Modal, Input } from 'antd';
+import type { MenuProps, TreeDataNode } from 'antd';
 import {
   FolderOutlined,
   FileTextOutlined,
   PlusOutlined,
   PushpinOutlined,
+  MoreOutlined,
+  TeamOutlined,
+  PlayCircleOutlined,
 } from '@ant-design/icons';
 import LeftPanel from '../../components/LeftPanel';
 import RightContent from '../../components/RightContent';
 import { FileItem, FileType } from '../../types';
+import { useAppStore } from '../../store';
 import styles from './index.module.less';
 
 /**
@@ -82,6 +86,52 @@ const treeData: TreeDataNode[] = [
 
 const DirectoryTreePage: React.FC = () => {
   const navigate = useNavigate();
+  const { setActiveModal, materialItems, renameMaterialItem } = useAppStore();
+
+  // 悬停的素材项 ID
+  const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
+  // 重命名弹窗状态
+  const [renameModalOpen, setRenameModalOpen] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+
+  /**
+   * 打开添加资料弹窗
+   */
+  const handleAddMaterial = () => {
+    setActiveModal('addFile');
+  };
+
+  /**
+   * 打开重命名弹窗
+   */
+  const handleOpenRename = (id: string, currentName: string) => {
+    setRenamingId(id);
+    setRenameValue(currentName);
+    setRenameModalOpen(true);
+  };
+
+  /**
+   * 确认重命名
+   */
+  const handleRenameConfirm = () => {
+    if (renamingId && renameValue.trim()) {
+      renameMaterialItem(renamingId, renameValue.trim());
+    }
+    setRenameModalOpen(false);
+    setRenamingId(null);
+  };
+
+  /**
+   * 素材三点菜单
+   */
+  const getMaterialMenuItems = (id: string, name: string): MenuProps['items'] => [
+    {
+      key: 'rename',
+      label: '重命名',
+      onClick: () => handleOpenRename(id, name),
+    },
+  ];
 
   /**
    * 处理关闭面板
@@ -141,6 +191,7 @@ const DirectoryTreePage: React.FC = () => {
             className={styles.treeAddBtn}
             icon={<PlusOutlined />}
             block
+            onClick={handleAddMaterial}
           >
             添加资料
           </Button>
@@ -165,8 +216,60 @@ const DirectoryTreePage: React.FC = () => {
               className={styles.tree}
             />
           </div>
+
+          {/* 素材列表（研讨会 / 直播） */}
+          {materialItems.length > 0 && (
+            <div className={styles.materialList}>
+              {materialItems.map((item) => (
+                <div
+                  key={item.id}
+                  className={styles.materialItem}
+                  onMouseEnter={() => setHoveredItemId(item.id)}
+                  onMouseLeave={() => setHoveredItemId(null)}
+                >
+                  {item.sourceType === 'seminar'
+                    ? <TeamOutlined className={styles.materialIcon} style={{ color: '#4A90D9' }} />
+                    : <PlayCircleOutlined className={styles.materialIcon} style={{ color: '#F56C6C' }} />
+                  }
+                  <span className={styles.materialName}>{item.name}</span>
+                  {hoveredItemId === item.id && (
+                    <Dropdown
+                      menu={{ items: getMaterialMenuItems(item.id, item.name) }}
+                      trigger={['click']}
+                      placement="bottomRight"
+                    >
+                      <div
+                        className={styles.materialMore}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreOutlined />
+                      </div>
+                    </Dropdown>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* ==================== 重命名弹窗 ==================== */}
+      <Modal
+        title="重命名"
+        open={renameModalOpen}
+        onOk={handleRenameConfirm}
+        onCancel={() => setRenameModalOpen(false)}
+        okText="确定"
+        cancelText="取消"
+        width={360}
+      >
+        <Input
+          value={renameValue}
+          onChange={(e) => setRenameValue(e.target.value)}
+          onPressEnter={handleRenameConfirm}
+          autoFocus
+        />
+      </Modal>
 
       {/* ==================== 右侧内容区 ==================== */}
       <RightContent />

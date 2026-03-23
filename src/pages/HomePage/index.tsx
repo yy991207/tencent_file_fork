@@ -6,8 +6,8 @@
  */
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Button, Tree, Space } from 'antd';
-import type { TreeDataNode } from 'antd';
+import { Button, Tree, Space, Dropdown, Modal, Input } from 'antd';
+import type { MenuProps, TreeDataNode } from 'antd';
 import {
   PlusOutlined,
   PushpinOutlined,
@@ -22,20 +22,23 @@ import {
   UnorderedListOutlined,
   ArrowLeftOutlined,
   VideoCameraOutlined,
+  MoreOutlined,
+  PlayCircleOutlined,
 } from '@ant-design/icons';
 import FolderIcon from '../../components/FolderIcon';
 import FileList from '../../components/FileList';
 import RightContent from '../../components/RightContent';
 import MeetingView from '../../components/MeetingView';
+import MaterialView from '../../components/MaterialView';
 import MemberManageDrawer from '../../components/MemberManageDrawer';
 import { useAppStore } from '../../store';
-import { FileItem, FileType } from '../../types';
+import { FileItem, FileType, MaterialItem } from '../../types';
 import styles from './index.module.less';
 
 /**
  * 生成文件夹树数据（收起状态显示）
  */
-const buildCollapsedTreeData = (meetingName: string): TreeDataNode[] => [
+const buildCollapsedTreeData = (meetingName: string, materials: MaterialItem[]): TreeDataNode[] => [
   {
     title: (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
@@ -52,6 +55,14 @@ const buildCollapsedTreeData = (meetingName: string): TreeDataNode[] => [
     icon: <VideoCameraOutlined style={{ color: '#1677FF' }} />,
     isLeaf: true,
   },
+  ...materials.map(item => ({
+    title: item.name,
+    key: item.id,
+    icon: item.sourceType === 'seminar'
+      ? <TeamOutlined style={{ color: '#4A90D9' }} />
+      : <PlayCircleOutlined style={{ color: '#F56C6C' }} />,
+    isLeaf: true,
+  })),
 ];
 
 /**
@@ -200,7 +211,16 @@ type DropPosition = 'inside' | 'before' | 'after' | null;
 
 const HomePage: React.FC = () => {
   const location = useLocation();
-  const { setActiveModal } = useAppStore();
+  const { setActiveModal, materialItems, renameMaterialItem } = useAppStore();
+
+  // 悬停的素材项 ID
+  const [hoveredMaterialId, setHoveredMaterialId] = useState<string | null>(null);
+  // 当前选中的素材项（研讨会 / 直播）
+  const [selectedMaterialItem, setSelectedMaterialItem] = useState<MaterialItem | null>(null);
+  // 重命名弹窗
+  const [renameModalOpen, setRenameModalOpen] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
 
   // 控制面板是否展开的状态
   const [expanded, setExpanded] = useState(false);
@@ -237,7 +257,7 @@ const HomePage: React.FC = () => {
   }, [folderData]);
 
   // 根据 meetingDisplayName 动态生成树数据
-  const collapsedTreeData = useMemo(() => buildCollapsedTreeData(meetingDisplayName), [meetingDisplayName]);
+  const collapsedTreeData = useMemo(() => buildCollapsedTreeData(meetingDisplayName, materialItems), [meetingDisplayName, materialItems]);
   const directoryTreeData = useMemo(() => buildDirectoryTreeData(meetingDisplayName), [meetingDisplayName]);
 
   // 目录树弹窗的 ref，用于检测点击外部
@@ -445,6 +465,37 @@ const HomePage: React.FC = () => {
   }, [findItemFolder, calculateCounts]);
 
   /**
+   * 打开重命名弹窗
+   */
+  const handleOpenRename = (id: string, currentName: string) => {
+    setRenamingId(id);
+    setRenameValue(currentName);
+    setRenameModalOpen(true);
+  };
+
+  /**
+   * 确认重命名
+   */
+  const handleRenameConfirm = () => {
+    if (renamingId && renameValue.trim()) {
+      renameMaterialItem(renamingId, renameValue.trim());
+    }
+    setRenameModalOpen(false);
+    setRenamingId(null);
+  };
+
+  /**
+   * 获取素材三点菜单
+   */
+  const getMaterialMenuItems = (id: string, name: string): MenuProps['items'] => [
+    {
+      key: 'rename',
+      label: '重命名',
+      onClick: () => handleOpenRename(id, name),
+    },
+  ];
+
+  /**
    * 处理添加资料按钮点击
    */
   const handleAddFile = () => {
@@ -459,7 +510,6 @@ const HomePage: React.FC = () => {
     if (selectedKeys.length > 0) {
       const key = selectedKeys[0] as string;
       if (key === 'meeting_1') {
-        // 点击会议记录，直接在右侧显示会议视图
         setSelectedMeeting({
           id: '10',
           name: '项目周会',
@@ -468,8 +518,17 @@ const HomePage: React.FC = () => {
           ownerId: 'user_001',
           lastModified: '10:30',
         });
+        setSelectedMaterialItem(null);
         return;
       }
+      // 检查是否是素材项
+      const materialItem = materialItems.find(item => item.id === key);
+      if (materialItem) {
+        setSelectedMaterialItem(materialItem);
+        setSelectedMeeting(null);
+        return;
+      }
+      setSelectedMaterialItem(null);
       setExpanded(true);
     }
   };
@@ -650,7 +709,7 @@ const HomePage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 文件夹列表 */}
+                {/* 文件夹列表（含素材条目） */}
                 <div className={styles.folderList}>
                   <Tree
                     showIcon
@@ -742,6 +801,7 @@ const HomePage: React.FC = () => {
             className={styles.treeAddBtn}
             icon={<PlusOutlined />}
             block
+            onClick={handleAddFile}
           >
             添加资料
           </Button>
@@ -838,9 +898,35 @@ const HomePage: React.FC = () => {
             setSelectedMeeting(prev => prev ? { ...prev, name: newName } : null);
           }}
         />
+      ) : selectedMaterialItem ? (
+        <MaterialView
+          item={selectedMaterialItem}
+          onNameChange={(id, newName) => {
+            renameMaterialItem(id, newName);
+            setSelectedMaterialItem(prev => prev ? { ...prev, name: newName } : null);
+          }}
+        />
       ) : (
         <RightContent />
       )}
+
+      {/* ==================== 重命名弹窗 ==================== */}
+      <Modal
+        title="重命名"
+        open={renameModalOpen}
+        onOk={handleRenameConfirm}
+        onCancel={() => setRenameModalOpen(false)}
+        okText="确定"
+        cancelText="取消"
+        width={360}
+      >
+        <Input
+          value={renameValue}
+          onChange={(e) => setRenameValue(e.target.value)}
+          onPressEnter={handleRenameConfirm}
+          autoFocus
+        />
+      </Modal>
     </div>
   );
 };

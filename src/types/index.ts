@@ -97,6 +97,20 @@ export interface TreeNode {
 }
 
 /**
+ * 素材来源类型
+ */
+export type MaterialSourceType = 'seminar' | 'live';
+
+/**
+ * 左侧素材列表项
+ */
+export interface MaterialItem {
+  id: string;
+  name: string;
+  sourceType: MaterialSourceType;
+}
+
+/**
  * 页面元数据 - 用于描述页面之间的关联关系
  */
 export interface PageMetadata {

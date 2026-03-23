@@ -794,3 +794,53 @@
   padding: 16px;
   overflow-y: auto;
 }
+
+/* ==================== 素材条目样式（与文件夹列表同一容器） ==================== */
+.materialList {
+  margin-top: 4px;
+  padding-top: 4px;
+}
+
+.materialItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+
+  &:hover {
+    background-color: #F5F7FA;
+  }
+}
+
+.materialIcon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.materialName {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-color-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.materialMore {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  color: #888;
+  flex-shrink: 0;
+
+  &:hover {
+    background-color: #E8E8E8;
+    color: var(--text-color-primary);
+  }
+}

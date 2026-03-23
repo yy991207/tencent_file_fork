@@ -3,7 +3,7 @@
  * 使用 Zustand 进行状态管理，轻量且易于使用
  */
 import { create } from 'zustand';
-import { FileItem, FolderInfo, UserInfo, ModalType, FolderMember, PermissionType } from '../types';
+import { FileItem, FolderInfo, UserInfo, ModalType, FolderMember, PermissionType, MaterialItem, MaterialSourceType } from '../types';
 
 /**
  * 应用全局状态接口
@@ -46,6 +46,11 @@ interface AppState {
 
   folderPermission: PermissionType;       // 文件夹权限
   setFolderPermission: (permission: PermissionType) => void;
+
+  // ==================== 素材列表状态 ====================
+  materialItems: MaterialItem[];          // 添加的素材列表
+  addMaterialItem: (sourceType: MaterialSourceType) => void;
+  renameMaterialItem: (id: string, name: string) => void;
 }
 
 /**
@@ -107,4 +112,22 @@ export const useAppStore = create<AppState>((set) => ({
 
   folderPermission: 'private',
   setFolderPermission: (permission) => set({ folderPermission: permission }),
+
+  // ==================== 素材列表 ====================
+  materialItems: [],
+  addMaterialItem: (sourceType) => set((state) => ({
+    materialItems: [
+      ...state.materialItems,
+      {
+        id: `material_${Date.now()}`,
+        name: '未命名',
+        sourceType,
+      },
+    ],
+  })),
+  renameMaterialItem: (id, name) => set((state) => ({
+    materialItems: state.materialItems.map((item) =>
+      item.id === id ? { ...item, name } : item
+    ),
+  })),
 }));

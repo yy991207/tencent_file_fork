@@ -18,7 +18,7 @@ import { useAppStore } from '../../store';
 import styles from './index.module.less';
 
 const AddFileModal: React.FC = () => {
-  const { activeModal, setActiveModal } = useAppStore();
+  const { activeModal, setActiveModal, addMaterialItem } = useAppStore();
 
   // 判断弹窗是否打开
   const isOpen = activeModal === 'addFile';
@@ -122,8 +122,8 @@ const AddFileModal: React.FC = () => {
           <div className={styles.cardButtons}>
             <Button icon={<ScissorOutlined />}>网页剪存</Button>
             <Button icon={<CopyOutlined />}>粘贴文本</Button>
-            <Button icon={<TeamOutlined style={{ color: '#4A90D9' }} />}>研讨会</Button>
-            <Button icon={<PlayCircleOutlined style={{ color: '#F56C6C' }} />}>直播</Button>
+            <Button icon={<TeamOutlined style={{ color: '#4A90D9' }} />} onClick={() => { addMaterialItem('seminar'); handleClose(); }}>研讨会</Button>
+            <Button icon={<PlayCircleOutlined style={{ color: '#F56C6C' }} />} onClick={() => { addMaterialItem('live'); handleClose(); }}>直播</Button>
           </div>
         </div>
       </div>
