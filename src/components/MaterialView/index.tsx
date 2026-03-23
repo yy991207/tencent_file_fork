@@ -109,9 +109,12 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
 
   const handleStartLive = () => {
     const roomId = String(Math.floor(100000 + Math.random() * 900000));
+    // 研讨会 → Standard(1)普通会议；直播 → Webinar(2)网络研讨会
+    const roomType = isSeminar ? 1 : 2;
     const params = new URLSearchParams({
       action: 'start',
       roomId,
+      roomType: String(roomType),
       roomName: roomName.trim() || `${typeLabel} - ${item.name}`,
       isOpenCamera: String(isOpenCamera),
       isOpenMicrophone: String(isOpenMicrophone),

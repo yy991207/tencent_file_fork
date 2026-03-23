@@ -19,6 +19,8 @@ export default function MeetingPage() {
   const action = searchParams.get('action') as 'start' | 'join' | null;
   const roomId = searchParams.get('roomId');
   const roomName = searchParams.get('roomName');
+  // 研讨会=1(Standard)，直播=2(Webinar)；默认 Standard
+  const roomType = Number(searchParams.get('roomType') ?? '1');
   const isMicrophoneDisableForAllUser = searchParams.get('isMicrophoneDisableForAllUser') === 'true';
   const isCameraDisableForAllUser = searchParams.get('isCameraDisableForAllUser') === 'true';
 
@@ -39,7 +41,7 @@ export default function MeetingPage() {
           if (action === 'start' && roomId) {
             const payload: CreateMeetingPayload = {
               roomId,
-              roomType: 1,
+              roomType,
               roomName: roomName ? decodeURIComponent(roomName) : undefined,
               isMicrophoneDisableForAllUser,
               isCameraDisableForAllUser,
@@ -72,7 +74,7 @@ export default function MeetingPage() {
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [navigate, action, roomId, roomName, isMicrophoneDisableForAllUser, isCameraDisableForAllUser, sendToChild]);
+  }, [navigate, action, roomId, roomType, roomName, isMicrophoneDisableForAllUser, isCameraDisableForAllUser, sendToChild]);
 
   return (
     <div className={styles.meetingPage}>
