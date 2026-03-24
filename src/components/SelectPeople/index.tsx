@@ -8,51 +8,87 @@
  *   onCancel   — 取消/关闭回调
  */
 import React, { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { Modal } from 'antd';
-import rawData from './data/1.json';
+import { Modal, Spin } from 'antd';
 import Breadcrumb from './components/Breadcrumb.jsx';
 import OrgList from './components/OrgList.jsx';
 import SearchBar from './components/SearchBar.jsx';
 import SelectedPanel from './components/SelectedPanel.jsx';
 import { buildDeptPath, buildDeptUsersMap, normalizeOrgData, searchInDept } from './utils/orgData.js';
+import { useAppStore } from '@/store';
 import './styles.css';
 
 const INITIAL_PAGE_SIZE = 18;
+
+interface ApiMember {
+  id: string;
+  memberId: string;
+  memberName: string;
+  memberType: 1 | 2; // 1=个人用户, 2=组织/部门
+}
+
+function transformApiResponse(members: ApiMember[]) {
+  const departs = members
+    .filter((m) => m.memberType === 2)
+    .map((m) => ({ id: m.memberId, departName: m.memberName }));
+  const users = members
+    .filter((m) => m.memberType === 1)
+    .map((m) => ({ id: m.memberId, realname: m.memberName }));
+  return { departs, users };
+}
 
 interface User { id: string; name: string; title?: string; avatar?: string; }
 interface Dept { id: string; name: string; }
 
 interface SelectPeopleModalProps {
   open: boolean;
+  bizId: string;
   onConfirm: (result: { users: User[]; depts: Dept[] }) => void;
   onCancel: () => void;
 }
 
-export default function SelectPeopleModal({ open, onConfirm, onCancel }: SelectPeopleModalProps) {
+export default function SelectPeopleModal({ open, bizId, onConfirm, onCancel }: SelectPeopleModalProps) {
+  const currentUser = useAppStore((s) => s.currentUser);
   const [path, setPath] = useState<any[]>([]);
   const [query, setQuery] = useState('');
   const deferredQuery = useDeferredValue(query);
   const [selectedDeptIds, setSelectedDeptIds] = useState<Set<string>>(() => new Set());
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(() => new Set());
   const [visibleCount, setVisibleCount] = useState(INITIAL_PAGE_SIZE);
+  const [dataState, setDataState] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
 
-  // 每次打开重置状态
+  // 每次打开重置状态并拉取接口数据
   useEffect(() => {
-    if (open) {
-      setPath([]);
-      setQuery('');
-      setSelectedDeptIds(new Set());
-      setSelectedUserIds(new Set());
-      setVisibleCount(INITIAL_PAGE_SIZE);
-    }
-  }, [open]);
+    if (!open || !bizId) return;
+    setPath([]);
+    setQuery('');
+    setSelectedDeptIds(new Set());
+    setSelectedUserIds(new Set());
+    setVisibleCount(INITIAL_PAGE_SIZE);
+    setDataState(null);
+    setLoading(true);
 
-  const [dataState] = useState(() => {
-    try { return normalizeOrgData(rawData); } catch (error) { return { error }; }
-  });
+    fetch(`/jeecg-boot/sys/bizMember/${bizId}/list`, {
+      headers: {
+        'x-access-token': currentUser?.accessToken ?? localStorage.getItem('x-access-token') ?? '',
+        'content-type': 'application/json',
+      },
+    })
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.result)) {
+          const normalized = transformApiResponse(json.result as ApiMember[]);
+          setDataState(normalizeOrgData({ result: normalized }));
+        } else {
+          setDataState({ error: new Error(json.message || '接口返回数据异常') });
+        }
+      })
+      .catch((err) => setDataState({ error: err }))
+      .finally(() => setLoading(false));
+  }, [open, bizId]);
 
-  const data = (dataState as any)?.root ? dataState : null;
-  const error = (dataState as any)?.error;
+  const data = dataState?.root ? dataState : null;
+  const error = dataState?.error;
 
   const currentNode = useMemo(() => {
     if (!data) return null;
@@ -144,7 +180,11 @@ export default function SelectPeopleModal({ open, onConfirm, onCancel }: SelectP
       destroyOnHidden
     >
       <div className="sp-root">
-        {error ? (
+        {loading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
+            <Spin tip="加载中..." />
+          </div>
+        ) : error ? (
           <div className="error">{(error as any).message}</div>
         ) : !data || !currentNode ? null : (
           <div className="dialog-body">

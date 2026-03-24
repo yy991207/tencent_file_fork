@@ -14,6 +14,12 @@ export default defineConfig({
         ws: true,        // 同时代理 WebSocket（Vite HMR）
         changeOrigin: true,
       },
+      // 代理后端接口，解决跨域
+      '/jeecg-boot': {
+        target: 'https://test-guoren-admin.grtcloud.net',
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
   resolve: {

@@ -237,6 +237,7 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
 
       <SelectPeopleModal
         open={selectPeopleOpen}
+        bizId={item.bizId ?? ''}
         onCancel={() => setSelectPeopleOpen(false)}
         onConfirm={({ users, depts }) => {
           // 合并已有 + 新选，去重

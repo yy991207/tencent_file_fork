@@ -53,6 +53,7 @@ export interface UserInfo {
   name: string;
   avatar?: string;               // 头像URL
   email?: string;
+  accessToken?: string;          // JeecGBoot JWT（x-access-token）
 }
 
 /**
@@ -108,6 +109,7 @@ export interface MaterialItem {
   id: string;
   name: string;
   sourceType: MaterialSourceType;
+  bizId?: string;  // 后端业务 ID，用于接口调用
 }
 
 /**
