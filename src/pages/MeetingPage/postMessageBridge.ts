@@ -30,6 +30,7 @@ export interface MeetingEndedPayload {
 }
 
 export interface CreateMeetingPayload {
+  userId?: string;    // TUIRoomKit 登录用的 userId，由 React 传入，Vue 侧自动 login
   roomId: string;
   roomType?: number;
   // 与 TUIRoomKit StartOptions 一一对应

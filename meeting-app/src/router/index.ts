@@ -2,6 +2,7 @@ import { TUIMessageBox, useUIKit } from '@tencentcloud/uikit-base-component-vue3
 import { useRoomState } from 'tuikit-atomicx-vue3/room';
 import { createRouter, createWebHashHistory } from 'vue-router';
 import { isPC } from '../utils/utils';
+import { isInIframe } from '../utils/postMessageBridge';
 import Login from '@/views/login.vue';
 
 const routes = [
@@ -33,6 +34,13 @@ router.beforeEach((to, from, next) => {
     next();
     return;
   }
+
+  // iframe 嵌入模式：跳过登录检查，由 React 父窗口通过 CREATE_MEETING 传入 userId 自动登录
+  if (isInIframe()) {
+    next();
+    return;
+  }
+
   const userInfo = localStorage.getItem('tuiRoom-userInfo');
   if (!userInfo) {
     next({ path: '/login', query: { redirect: to.fullPath } });

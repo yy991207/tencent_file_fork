@@ -16,7 +16,6 @@ import { useLoginState, useRoomModal } from 'tuikit-atomicx-vue3/room';
 import { useRouter, useRoute } from 'vue-router';
 import Login from '../components/LoginUserID/index.vue';
 import { SDKAPPID, genTestUserSig } from '../config/basic-info-config';
-import { deepClone } from '../utils/utils';
 
 const { login } = useLoginState();
 const { handleErrorWithModal } = useRoomModal();
@@ -36,8 +35,8 @@ const handleLogin = async (userInfo: {
       sdkAppId: userInfo.SDKAppID,
     });
     localStorage.setItem('tuiRoom-userInfo', JSON.stringify(userInfo));
-    const currentQuery = deepClone(route.query);
-    router.push({ path: route.query.from as string || '/home', query: currentQuery });
+    const redirectPath = (route.query.redirect as string) || '/home';
+    router.push(redirectPath);
   } catch (error: any) {
     console.error('Login failed:', error.code);
     handleErrorWithModal(error);

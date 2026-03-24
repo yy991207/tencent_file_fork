@@ -17,6 +17,10 @@ import { buildDeptPath, buildDeptUsersMap, normalizeOrgData, searchInDept } from
 import { useAppStore } from '@/store';
 import './styles.css';
 
+// 由 vite.config.ts 从 config.yaml 注入（调试用兜底，不写明文）
+declare const __DEBUG_TOKEN__: string;
+declare const __DEBUG_BIZ_ID__: string;
+
 const INITIAL_PAGE_SIZE = 18;
 
 interface ApiMember {
@@ -59,7 +63,10 @@ export default function SelectPeopleModal({ open, bizId, onConfirm, onCancel }: 
 
   // 每次打开重置状态并拉取接口数据
   useEffect(() => {
-    if (!open || !bizId) return;
+    // bizId 优先用 prop，prop 为空时回退到 config.yaml 注入的调试值
+    const effectiveBizId = bizId || __DEBUG_BIZ_ID__;
+    if (!open || !effectiveBizId) return;
+
     setPath([]);
     setQuery('');
     setSelectedDeptIds(new Set());
@@ -68,9 +75,14 @@ export default function SelectPeopleModal({ open, bizId, onConfirm, onCancel }: 
     setDataState(null);
     setLoading(true);
 
-    fetch(`/jeecg-boot/sys/bizMember/${bizId}/list`, {
+    // token 优先用 store / localStorage，均无时回退到 config.yaml 注入的调试值
+    const token = currentUser?.accessToken
+      ?? localStorage.getItem('x-access-token')
+      ?? __DEBUG_TOKEN__;
+
+    fetch(`/jeecg-boot/sys/bizMember/${effectiveBizId}/list`, {
       headers: {
-        'x-access-token': currentUser?.accessToken ?? localStorage.getItem('x-access-token') ?? '',
+        'x-access-token': token,
         'content-type': 'application/json',
       },
     })

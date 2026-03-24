@@ -15,15 +15,18 @@
 import { onMounted, onUnmounted } from 'vue';
 import { PreConferenceView } from '@tencentcloud/roomkit-web-vue3';
 import { useRouter } from 'vue-router';
+import { useLoginState } from 'tuikit-atomicx-vue3/room';
 import { useMediaPreference } from '../hooks/useMediaPreference';
 import type { TUIRoomType } from 'tuikit-atomicx-vue3/room';
 import { isInIframe, notifyParent, onParentMessage, ToParentEvent, ToChildEvent } from '../utils/postMessageBridge';
 import type { CreateMeetingPayload } from '../utils/postMessageBridge';
+import { SDKAPPID, genTestUserSig } from '../config/basic-info-config';
 
 // iframe 内嵌时不显示 PreConferenceView，直接等待 React 下发指令
 const isEmbedded = isInIframe();
 
 const router = useRouter();
+const { login } = useLoginState();
 
 const { setMicrophonePreference, setCameraPreference } = useMediaPreference();
 
@@ -71,7 +74,19 @@ onMounted(() => {
   notifyParent(ToParentEvent.MEETING_READY);
 
   // 监听来自 React 父窗口的创建/加入会议指令
-  cleanupListener = onParentMessage<CreateMeetingPayload>(ToChildEvent.CREATE_MEETING, (data) => {
+  cleanupListener = onParentMessage<CreateMeetingPayload>(ToChildEvent.CREATE_MEETING, async (data) => {
+    // iframe 模式下如果尚未登录 TUIRoomKit，用 React 传入的 userId 自动完成登录
+    if (isEmbedded && !localStorage.getItem('tuiRoom-userInfo') && data.userId) {
+      try {
+        const userSig = genTestUserSig(data.userId);
+        await login({ userId: data.userId, userSig, sdkAppId: SDKAPPID });
+        localStorage.setItem('tuiRoom-userInfo', JSON.stringify({
+          SDKAppID: SDKAPPID, userID: data.userId, userSig,
+        }));
+      } catch (e) {
+        console.error('[Meeting] 自动登录失败', e);
+      }
+    }
     handleCreateRoom(data.roomId, (data.roomType ?? 1) as TUIRoomType, {
       roomName: data.roomName,
       password: data.password,

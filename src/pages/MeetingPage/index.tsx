@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAppStore } from '@/store';
 import {
   ToParentEvent,
   ToChildEvent,
@@ -14,6 +15,7 @@ export default function MeetingPage() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const currentUser = useAppStore((s) => s.currentUser);
 
   // 从 URL 参数读取指令：/meeting?action=start&roomId=123456&roomName=xxx
   const action = searchParams.get('action') as 'start' | 'join' | null;
@@ -40,6 +42,7 @@ export default function MeetingPage() {
           // Vue home.vue 就绪，立即下发创建/加入指令（跳过图1入口页）
           if (action === 'start' && roomId) {
             const payload: CreateMeetingPayload = {
+              userId: currentUser?.id,
               roomId,
               roomType,
               roomName: roomName ? decodeURIComponent(roomName) : undefined,
@@ -74,7 +77,7 @@ export default function MeetingPage() {
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [navigate, action, roomId, roomType, roomName, isMicrophoneDisableForAllUser, isCameraDisableForAllUser, sendToChild]);
+  }, [navigate, action, roomId, roomType, roomName, isMicrophoneDisableForAllUser, isCameraDisableForAllUser, sendToChild, currentUser]);
 
   return (
     <div className={styles.meetingPage}>
