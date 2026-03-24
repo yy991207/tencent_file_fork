@@ -736,3 +736,64 @@
     color: #c7254e;
   }
 }
+
+// ── 邀请链接区块 ──────────────────────────────────
+.inviteSection {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: #f6f9ff;
+  border: 1px solid #d6e4ff;
+  border-radius: 6px;
+}
+
+.inviteSectionHeader {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.inviteList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.inviteItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.inviteName {
+  flex-shrink: 0;
+  width: 64px;
+  font-weight: 500;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inviteLink {
+  flex: 1;
+  color: #1677ff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: monospace;
+  font-size: 11px;
+}
+
+.inviteCopyBtn {
+  flex-shrink: 0;
+  color: #666;
+  &:hover { color: #1677ff; }
+}

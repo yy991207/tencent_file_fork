@@ -43,7 +43,13 @@ router.beforeEach((to, from, next) => {
 
   const userInfo = localStorage.getItem('tuiRoom-userInfo');
   if (!userInfo) {
-    next({ path: '/login', query: { redirect: to.fullPath } });
+    next({
+      path: '/login',
+      query: {
+        redirect: to.fullPath,
+        ...(to.query.userId ? { userId: to.query.userId } : {}),
+      },
+    });
     return;
   }
 

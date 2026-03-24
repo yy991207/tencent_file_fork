@@ -7,7 +7,7 @@
  */
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Checkbox, Input, Select, Switch, Tag, Tooltip } from 'antd';
+import { Button, Checkbox, Input, message, Select, Switch, Tag, Tooltip } from 'antd';
 import {
   SettingOutlined,
   LoginOutlined,
@@ -28,6 +28,8 @@ import {
   EyeInvisibleOutlined,
   NumberOutlined,
   FileTextOutlined,
+  CopyOutlined,
+  LinkOutlined,
 } from '@ant-design/icons';
 import { MaterialItem } from '../../types';
 import SelectPeopleModal from '../SelectPeople';
@@ -108,19 +110,31 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
   const [selectPeopleOpen, setSelectPeopleOpen] = useState(false);
 
   const [saved, setSaved] = useState(false);
+  /** 保存时确定的房间 ID，用于生成邀请链接和启动会议 */
+  const [roomId, setRoomId] = useState('');
+
+  /** 生成指定成员的专属邀请链接 */
+  const getInviteLink = (memberId: string) => {
+    const roomType = isSeminar ? 1 : 2;
+    return `${window.location.origin}/meeting-app/#/room?roomId=${roomId}&roomType=${roomType}&userId=${memberId}`;
+  };
 
   const handleSave = () => {
+    // 首次保存时生成房间 ID，后续保存保持不变
+    if (!roomId) {
+      setRoomId(String(Math.floor(100000 + Math.random() * 900000)));
+    }
     onNameChange?.(item.id, roomName.trim() || typeLabel);
     setSaved(true);
   };
 
   const handleStartLive = () => {
-    const roomId = String(Math.floor(100000 + Math.random() * 900000));
-    // 研讨会 → Standard(1)普通会议；直播 → Webinar(2)网络研讨会
+    // 使用保存时确定的 roomId，保证邀请链接和实际房间一致
+    const rid = roomId || String(Math.floor(100000 + Math.random() * 900000));
     const roomType = isSeminar ? 1 : 2;
     const params = new URLSearchParams({
       action: 'start',
-      roomId,
+      roomId: rid,
       roomType: String(roomType),
       roomName: roomName.trim() || `${typeLabel} - ${item.name}`,
       isOpenCamera: String(isOpenCamera),
@@ -343,6 +357,52 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
         </Button>
         <Button className={styles.cancelBtn}>取消</Button>
       </div>
+
+      {/* 邀请链接 — 保存后且有参会成员时展示 */}
+      {saved && roomId && selectedAttendeeObjects.length > 0 && (
+        <div className={styles.inviteSection}>
+          <div className={styles.inviteSectionHeader}>
+            <LinkOutlined style={{ marginRight: 6 }} />
+            邀请链接
+            <Button
+              type="link"
+              size="small"
+              icon={<CopyOutlined />}
+              style={{ marginLeft: 8 }}
+              onClick={() => {
+                const all = selectedAttendeeObjects
+                  .map(u => `${u.name}：${getInviteLink(u.id)}`)
+                  .join('\n');
+                navigator.clipboard.writeText(all);
+                message.success('已复制全部邀请链接');
+              }}
+            >
+              一键复制全部
+            </Button>
+          </div>
+          <div className={styles.inviteList}>
+            {selectedAttendeeObjects.map((u) => {
+              const link = getInviteLink(u.id);
+              return (
+                <div key={u.id} className={styles.inviteItem}>
+                  <span className={styles.inviteName}>{u.name}</span>
+                  <span className={styles.inviteLink}>{link}</span>
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<CopyOutlined />}
+                    className={styles.inviteCopyBtn}
+                    onClick={() => {
+                      navigator.clipboard.writeText(link);
+                      message.success(`已复制 ${u.name} 的链接`);
+                    }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 

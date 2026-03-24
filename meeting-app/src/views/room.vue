@@ -1,9 +1,18 @@
 <template>
-  <ConferenceMainView />
+  <!-- 等待主播开始时显示遮罩，不显示会议室界面 -->
+  <div v-if="waitingForHost" class="waiting-overlay">
+    <div class="waiting-card">
+      <div class="waiting-spinner"></div>
+      <p class="waiting-title">等待主播开始直播…</p>
+      <p class="waiting-hint">将在 {{ retryCountdown }} 秒后自动重试（已等待 {{ retryCount }} 次）</p>
+      <button class="waiting-cancel" @click="cancelWaiting">取消</button>
+    </div>
+  </div>
+  <ConferenceMainView v-else />
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, watch } from 'vue';
+import { onMounted, onUnmounted, ref, watch } from 'vue';
 import { ComponentName, conference, ConferenceMainView, RoomEvent as ConferenceRoomEvent } from '@tencentcloud/roomkit-web-vue3';
 import {
   useUIKit,
@@ -19,7 +28,7 @@ import {
 } from 'tuikit-atomicx-vue3/room';
 import { useRoute, useRouter } from 'vue-router';
 import { useMediaPreference } from '../hooks/useMediaPreference';
-import { notifyParent, ToParentEvent } from '../utils/postMessageBridge';
+import { notifyParent, ToParentEvent, isInIframe } from '../utils/postMessageBridge';
 
 conference.setComponentConfig({ componentName: ComponentName.AIToolsButton, visible: true });
 
@@ -72,6 +81,51 @@ watch(() => currentRoom.value?.roomId, async (currentRoomId, prevRoomId) => {
   }
 }, { immediate: true });
 
+const MAX_RETRY = 20;          // 最多重试 20 次（约 100 秒）
+const RETRY_INTERVAL = 5;      // 每次等待 5 秒
+
+const waitingForHost = ref(false);
+const retryCount = ref(0);
+const retryCountdown = ref(RETRY_INTERVAL);
+
+let retryTimer: ReturnType<typeof setTimeout> | null = null;
+let countdownTimer: ReturnType<typeof setInterval> | null = null;
+
+function startCountdown() {
+  retryCountdown.value = RETRY_INTERVAL;
+  countdownTimer = setInterval(() => {
+    retryCountdown.value--;
+    if (retryCountdown.value <= 0) {
+      clearInterval(countdownTimer!);
+    }
+  }, 1000);
+}
+
+function scheduleRetry() {
+  if (retryCount.value >= MAX_RETRY) {
+    waitingForHost.value = false;
+    router.replace('/home');
+    return;
+  }
+  startCountdown();
+  retryTimer = setTimeout(async () => {
+    retryCount.value++;
+    try {
+      await handleJoinConference();
+      waitingForHost.value = false;  // 成功进入，隐藏遮罩
+    } catch {
+      scheduleRetry();  // 仍然失败，继续等待
+    }
+  }, RETRY_INTERVAL * 1000);
+}
+
+function cancelWaiting() {
+  if (retryTimer) clearTimeout(retryTimer);
+  if (countdownTimer) clearInterval(countdownTimer);
+  waitingForHost.value = false;
+  router.replace('/home');
+}
+
 async function handleEnterRoom() {
   const isCreateKey = `room-${roomId}-isCreate`;
   const isCreate = sessionStorage.getItem(isCreateKey) === 'true';
@@ -82,9 +136,15 @@ async function handleEnterRoom() {
     } else {
       await handleJoinConference();
     }
-  } catch (error) {
-    handleErrorWithModal(error);
-    router.replace('/home');
+  } catch (error: any) {
+    if (!isCreate) {
+      // 加入失败（房间尚未创建）→ 等待主播并自动重试
+      waitingForHost.value = true;
+      scheduleRetry();
+    } else {
+      handleErrorWithModal(error);
+      router.replace('/home');
+    }
   }
 }
 
@@ -146,7 +206,8 @@ async function handleOpenMicrophone() {
 
 const handleBackHome = () => {
   notifyParent(ToParentEvent.MEETING_ENDED, { roomId });
-  router.replace('/home');
+  // iframe 模式：父窗口（React）会处理跳转；直接访问：带 from=room 标记跳 /home
+  router.replace(isInIframe() ? '/home' : '/home?from=room');
 };
 
 const handleKickedOut = () => {
@@ -171,11 +232,68 @@ onUnmounted(() => {
   conference.off(ConferenceRoomEvent.ROOM_LEAVE, handleBackHome);
   conference.off(ConferenceRoomEvent.ROOM_ERROR, handleRoomError);
   conference.off(ConferenceRoomEvent.KICKED_OUT, handleKickedOut);
+  // 组件销毁时清理重试 timer
+  if (retryTimer) clearTimeout(retryTimer);
+  if (countdownTimer) clearInterval(countdownTimer);
 });
 
 </script>
 
 <style lang="scss" scoped>
+
+.waiting-overlay {
+  position: fixed;
+  inset: 0;
+  background: #0d0d0d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.waiting-card {
+  text-align: center;
+  color: #fff;
+  padding: 40px 48px;
+  background: #1a1a1a;
+  border-radius: 12px;
+  border: 1px solid #333;
+}
+
+.waiting-spinner {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 20px;
+  border: 3px solid #333;
+  border-top-color: #1677ff;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.waiting-title {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0 0 8px;
+}
+
+.waiting-hint {
+  font-size: 13px;
+  color: #888;
+  margin: 0 0 24px;
+}
+
+.waiting-cancel {
+  padding: 6px 20px;
+  background: transparent;
+  border: 1px solid #555;
+  border-radius: 6px;
+  color: #aaa;
+  cursor: pointer;
+  font-size: 13px;
+  &:hover { border-color: #888; color: #fff; }
+}
 
 .room-page {
   width: 100vw;

@@ -13,8 +13,8 @@ export function normalizeOrgData(raw) {
   const userMap = new Map();
 
   const createUser = (rawUser) => {
-    const baseId = rawUser?.id ? `u-${rawUser.id}` : "u";
-    const id = `${baseId}-${userCounter++}`;
+    // 有原始 id 时直接使用（保留 memberId 原值，用于邀请链接 userId 参数）
+    const id = rawUser?.id ? rawUser.id : `u-${userCounter++}`;
     const user = {
       id,
       name: rawUser?.realname || rawUser?.name || "未命名人员",
