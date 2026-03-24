@@ -5,7 +5,7 @@
  *                  isMicrophoneDisableForAllUser, isCameraDisableForAllUser
  *   Schedule API:  scheduleStartTime（日期+时间）, scheduleDuration, scheduleAttendees
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Checkbox, Input, message, Select, Switch, Tag, Tooltip } from 'antd';
 import {
@@ -14,7 +14,6 @@ import {
   ProfileOutlined,
   PrinterOutlined,
   ExportOutlined,
-  PlayCircleOutlined,
   TeamOutlined,
   ClockCircleOutlined,
   VideoCameraOutlined,
@@ -32,6 +31,7 @@ import {
   LinkOutlined,
 } from '@ant-design/icons';
 import { MaterialItem } from '../../types';
+import { useAppStore } from '../../store';
 import SelectPeopleModal from '../SelectPeople';
 import styles from './index.module.less';
 
@@ -72,76 +72,106 @@ function todayStr() {
 
 const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
   const navigate = useNavigate();
+  const updateMaterialItemConfig = useAppStore((s) => s.updateMaterialItemConfig);
   const [activeTab, setActiveTab] = useState<MaterialTab>('settings');
-  const isSeminar = item.sourceType === 'seminar';
-  const typeLabel = isSeminar ? '研讨会' : '直播';
+  const typeLabel = '研讨会';
 
   // ===== StartOptions 参数 =====
-  /** StartOptions.roomName */
   const [roomName, setRoomName] = useState('');
-  /** StartOptions.isOpenCamera */
   const [isOpenCamera, setIsOpenCamera] = useState(true);
-  /** StartOptions.isOpenMicrophone */
   const [isOpenMicrophone, setIsOpenMicrophone] = useState(true);
-  /** StartOptions.isMicrophoneDisableForAllUser — 全体静音 */
   const [isMicrophoneDisableForAllUser, setIsMicrophoneDisableForAllUser] = useState(false);
-  /** StartOptions.isCameraDisableForAllUser — 全体静画 */
   const [isCameraDisableForAllUser, setIsCameraDisableForAllUser] = useState(false);
 
   // ===== 安全设置：password =====
   const [passwordEnabled, setPasswordEnabled] = useState(false);
-  /** StartOptions.password */
   const [password, setPassword] = useState('');
 
-  // ===== Schedule API 参数（scheduleConference，当前仅 UI，未接入）=====
-  /** scheduleStartTime — 日期 */
+  // ===== Schedule API 参数 =====
   const [startDate, setStartDate] = useState(todayStr);
-  /** scheduleStartTime — 时间 */
   const [startTime, setStartTime] = useState('16:00');
-  /** scheduleDuration（秒） */
   const [duration, setDuration] = useState('1800');
-  /** 时区（影响 scheduleStartTime 时间戳计算） */
   const [timezone, setTimezone] = useState('UTC+08:00');
-  /** scheduleAttendees（userId 逗号分隔） */
-  const [attendees, setAttendees] = useState('');
-  /** 已选人员对象列表（用于回显姓名） */
   const [selectedAttendeeObjects, setSelectedAttendeeObjects] = useState<{ id: string; name: string }[]>([]);
-  /** 选人弹窗开关 */
   const [selectPeopleOpen, setSelectPeopleOpen] = useState(false);
 
   const [saved, setSaved] = useState(false);
-  /** 保存时确定的房间 ID，用于生成邀请链接和启动会议 */
   const [roomId, setRoomId] = useState('');
+
+  // ===== 从 Zustand 还原已保存的配置 =====
+  useEffect(() => {
+    const cfg = item.roomConfig;
+    if (!cfg) return;
+    if (cfg.roomId) { setRoomId(cfg.roomId); setSaved(true); }
+    if (cfg.roomName !== undefined) setRoomName(cfg.roomName);
+    if (cfg.startDate) setStartDate(cfg.startDate);
+    if (cfg.startTime) setStartTime(cfg.startTime);
+    if (cfg.duration) setDuration(cfg.duration);
+    if (cfg.timezone) setTimezone(cfg.timezone);
+    if (cfg.attendees) {
+      setSelectedAttendeeObjects(cfg.attendees);
+    }
+    if (cfg.passwordEnabled !== undefined) setPasswordEnabled(cfg.passwordEnabled);
+    if (cfg.password !== undefined) setPassword(cfg.password);
+    if (cfg.isOpenCamera !== undefined) setIsOpenCamera(cfg.isOpenCamera);
+    if (cfg.isOpenMicrophone !== undefined) setIsOpenMicrophone(cfg.isOpenMicrophone);
+    if (cfg.isMicrophoneDisableForAllUser !== undefined) setIsMicrophoneDisableForAllUser(cfg.isMicrophoneDisableForAllUser);
+    if (cfg.isCameraDisableForAllUser !== undefined) setIsCameraDisableForAllUser(cfg.isCameraDisableForAllUser);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item.id]);
 
   /** 生成指定成员的专属邀请链接 */
   const getInviteLink = (memberId: string) => {
-    const roomType = isSeminar ? 1 : 2;
-    return `${window.location.origin}/meeting-app/#/room?roomId=${roomId}&roomType=${roomType}&userId=${memberId}`;
+    return `${window.location.origin}/meeting-app/#/room?roomId=${roomId}&roomType=1&userId=${memberId}`;
   };
 
   const handleSave = () => {
     // 首次保存时生成房间 ID，后续保存保持不变
-    if (!roomId) {
-      setRoomId(String(Math.floor(100000 + Math.random() * 900000)));
-    }
+    const rid = roomId || String(Math.floor(100000 + Math.random() * 900000));
+    if (!roomId) setRoomId(rid);
+
+    // 写入 Zustand，下次打开时自动还原
+    updateMaterialItemConfig(item.id, {
+      roomId: rid,
+      roomName: roomName.trim(),
+      startDate,
+      startTime,
+      duration,
+      timezone,
+      attendees: selectedAttendeeObjects,
+      passwordEnabled,
+      password,
+      isOpenCamera,
+      isOpenMicrophone,
+      isMicrophoneDisableForAllUser,
+      isCameraDisableForAllUser,
+    });
+
     onNameChange?.(item.id, roomName.trim() || typeLabel);
     setSaved(true);
   };
 
   const handleStartLive = () => {
-    // 使用保存时确定的 roomId，保证邀请链接和实际房间一致
     const rid = roomId || String(Math.floor(100000 + Math.random() * 900000));
-    const roomType = isSeminar ? 1 : 2;
+
+    // 计算预约时间戳（毫秒）
+    const scheduleStartTimestamp = new Date(`${startDate}T${startTime}:00`).getTime();
+    const scheduleEndTimestamp = scheduleStartTimestamp + parseInt(duration) * 1000;
+    const attendeeIds = selectedAttendeeObjects.map(u => u.id);
+
     const params = new URLSearchParams({
       action: 'start',
       roomId: rid,
-      roomType: String(roomType),
-      roomName: roomName.trim() || `${typeLabel} - ${item.name}`,
+      roomType: '1',
+      roomName: roomName.trim() || `研讨会 - ${item.name}`,
       isOpenCamera: String(isOpenCamera),
       isOpenMicrophone: String(isOpenMicrophone),
       isMicrophoneDisableForAllUser: String(isMicrophoneDisableForAllUser),
       isCameraDisableForAllUser: String(isCameraDisableForAllUser),
+      scheduleStartTime: String(scheduleStartTimestamp),
+      scheduleEndTime: String(scheduleEndTimestamp),
     });
+    if (attendeeIds.length > 0) params.set('scheduleAttendees', attendeeIds.join(','));
     if (passwordEnabled && password.trim()) params.set('password', password.trim());
     navigate(`/meeting?${params.toString()}`);
   };
@@ -260,7 +290,6 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
             if (!merged.find((m) => m.id === p.id)) merged.push(p);
           });
           setSelectedAttendeeObjects(merged);
-          setAttendees(merged.map((p) => p.name).join('、'));
           setSelectPeopleOpen(false);
         }}
       />
@@ -427,15 +456,12 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
           {/* ── 标题区 ── */}
           <div className={styles.launchHeader}>
             <div className={styles.launchIconWrap}>
-              {isSeminar
-                ? <TeamOutlined style={{ fontSize: 28, color: '#4A90D9' }} />
-                : <VideoCameraOutlined style={{ fontSize: 28, color: '#F56C6C' }} />
-              }
+              <TeamOutlined style={{ fontSize: 28, color: '#4A90D9' }} />
             </div>
             <div className={styles.launchMeta}>
               <div className={styles.launchTitle}>{roomName || `未命名${typeLabel}`}</div>
-              <span className={styles.launchBadge} data-type={isSeminar ? 'seminar' : 'live'}>
-                {isSeminar ? '研讨会' : '直播'}
+              <span className={styles.launchBadge} data-type="seminar">
+                研讨会
               </span>
             </div>
           </div>
@@ -520,7 +546,7 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
               type="primary"
               size="large"
               className={styles.launchEnterBtn}
-              icon={isSeminar ? <LoginOutlined /> : <PlayCircleOutlined />}
+              icon={<LoginOutlined />}
               onClick={handleStartLive}
               disabled={!saved}
             >
@@ -571,8 +597,8 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
         <div className={styles.detailInfoCard}>
           <div className={styles.detailMeetingTitle}>
             {roomName || `未命名${typeLabel}`}
-            <span className={styles.detailTypeBadge} data-type={isSeminar ? 'seminar' : 'live'}>
-              {isSeminar ? '研讨会' : '直播'}
+            <span className={styles.detailTypeBadge} data-type="seminar">
+              研讨会
             </span>
           </div>
 
@@ -661,10 +687,7 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
     <div className={styles.materialView}>
       <div className={styles.topNav}>
         <div className={styles.navLeft}>
-          {isSeminar
-            ? <TeamOutlined style={{ color: '#4A90D9', fontSize: 16 }} />
-            : <PlayCircleOutlined style={{ color: '#F56C6C', fontSize: 16 }} />
-          }
+          <TeamOutlined style={{ color: '#4A90D9', fontSize: 16 }} />
           <span className={styles.viewTitle}>
             {roomName || `未命名${typeLabel}`}
           </span>
@@ -680,7 +703,7 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
           </Button>
           <Button
             className={`${styles.actionBtnPrimary} ${activeTab === 'launch' ? styles.actionBtnActive : ''}`}
-            icon={isSeminar ? <LoginOutlined /> : <PlayCircleOutlined />}
+            icon={<LoginOutlined />}
             type="link"
             onClick={() => setActiveTab('launch')}
           >

@@ -16,12 +16,16 @@ export const enum ToParentEvent {
   MEETING_ERROR = 'MEETING_ERROR',         // 会议发生错误
   USER_KICKED = 'USER_KICKED',             // 被踢出会议
   LOGIN_EXPIRED = 'LOGIN_EXPIRED',         // 登录态过期
+  ROOM_SCHEDULED = 'ROOM_SCHEDULED',       // scheduleRoom 预约成功
+  SCHEDULED_ROOM_CONFIG = 'SCHEDULED_ROOM_CONFIG', // 查询预约房间配置结果
 }
 
 /** React → Vue 消息类型 */
 export const enum ToChildEvent {
   CREATE_MEETING = 'CREATE_MEETING',       // 发起会议
   JOIN_MEETING = 'JOIN_MEETING',           // 加入会议
+  SCHEDULE_ROOM = 'SCHEDULE_ROOM',         // 保存时预约房间（不进入）
+  GET_SCHEDULED_ROOM = 'GET_SCHEDULED_ROOM', // 查询已预约房间配置
 }
 
 export interface CreateMeetingPayload {
@@ -35,6 +39,26 @@ export interface CreateMeetingPayload {
   isOpenMicrophone?: boolean;
   isMicrophoneDisableForAllUser?: boolean;
   isCameraDisableForAllUser?: boolean;
+  // 预约参数（scheduleRoom API）
+  scheduleStartTime?: number;   // 毫秒时间戳
+  scheduleEndTime?: number;     // 毫秒时间戳
+  scheduleAttendees?: string[]; // userId 列表
+}
+
+export interface ScheduleRoomPayload {
+  userId?: string;
+  roomId: string;
+  roomName?: string;
+  password?: string;
+  scheduleStartTime: number;
+  scheduleEndTime: number;
+  scheduleAttendees?: string[];
+  isAllMicrophoneDisabled?: boolean;
+  isAllCameraDisabled?: boolean;
+}
+
+export interface GetScheduledRoomPayload {
+  roomId: string;
 }
 
 export interface JoinMeetingPayload {

@@ -3,7 +3,7 @@
  * 使用 Zustand 进行状态管理，轻量且易于使用
  */
 import { create } from 'zustand';
-import { FileItem, FolderInfo, UserInfo, ModalType, FolderMember, PermissionType, MaterialItem, MaterialSourceType } from '../types';
+import { FileItem, FolderInfo, UserInfo, ModalType, FolderMember, PermissionType, MaterialItem, MaterialSourceType, MaterialRoomConfig } from '../types';
 
 /**
  * 应用全局状态接口
@@ -51,6 +51,7 @@ interface AppState {
   materialItems: MaterialItem[];          // 添加的素材列表
   addMaterialItem: (sourceType: MaterialSourceType) => void;
   renameMaterialItem: (id: string, name: string) => void;
+  updateMaterialItemConfig: (id: string, config: MaterialRoomConfig) => void;
 }
 
 /**
@@ -128,6 +129,11 @@ export const useAppStore = create<AppState>((set) => ({
   renameMaterialItem: (id, name) => set((state) => ({
     materialItems: state.materialItems.map((item) =>
       item.id === id ? { ...item, name } : item
+    ),
+  })),
+  updateMaterialItemConfig: (id, config) => set((state) => ({
+    materialItems: state.materialItems.map((item) =>
+      item.id === id ? { ...item, roomConfig: { ...item.roomConfig, ...config } } : item
     ),
   })),
 }));

@@ -12,12 +12,58 @@ export const enum ToParentEvent {
   MEETING_ERROR = 'MEETING_ERROR',
   USER_KICKED = 'USER_KICKED',
   LOGIN_EXPIRED = 'LOGIN_EXPIRED',
+  /** scheduleRoom 预约成功回调 */
+  ROOM_SCHEDULED = 'ROOM_SCHEDULED',
+  /** getScheduledRoomList 查询结果回调 */
+  SCHEDULED_ROOM_CONFIG = 'SCHEDULED_ROOM_CONFIG',
 }
 
 /** React → Vue 消息类型（父 → 子） */
 export const enum ToChildEvent {
   CREATE_MEETING = 'CREATE_MEETING',
   JOIN_MEETING = 'JOIN_MEETING',
+  /** 保存时预约房间（不进入会议） */
+  SCHEDULE_ROOM = 'SCHEDULE_ROOM',
+  /** 查询已预约房间的配置 */
+  GET_SCHEDULED_ROOM = 'GET_SCHEDULED_ROOM',
+}
+
+/** SCHEDULE_ROOM 指令 payload */
+export interface ScheduleRoomPayload {
+  userId?: string;
+  roomId: string;
+  roomName?: string;
+  password?: string;
+  scheduleStartTime: number;  // 毫秒
+  scheduleEndTime: number;    // 毫秒
+  scheduleAttendees?: string[];
+  isAllMicrophoneDisabled?: boolean;
+  isAllCameraDisabled?: boolean;
+}
+
+/** ROOM_SCHEDULED 回调 payload */
+export interface RoomScheduledPayload {
+  roomId: string;
+  success: boolean;
+  error?: string;
+}
+
+/** GET_SCHEDULED_ROOM 指令 payload */
+export interface GetScheduledRoomPayload {
+  roomId: string;
+}
+
+/** SCHEDULED_ROOM_CONFIG 回调 payload（对应 ScheduleRoomOptions 字段） */
+export interface ScheduledRoomConfigPayload {
+  roomId: string;
+  roomName?: string;
+  password?: string;
+  scheduleStartTime?: number;
+  scheduleEndTime?: number;
+  scheduleAttendees?: string[];
+  isAllMicrophoneDisabled?: boolean;
+  isAllCameraDisabled?: boolean;
+  found: boolean;
 }
 
 export interface MeetingStartedPayload {
@@ -40,6 +86,10 @@ export interface CreateMeetingPayload {
   isOpenMicrophone?: boolean;
   isMicrophoneDisableForAllUser?: boolean;
   isCameraDisableForAllUser?: boolean;
+  // 预约参数（scheduleRoom API）
+  scheduleStartTime?: number;   // 毫秒时间戳
+  scheduleEndTime?: number;     // 毫秒时间戳
+  scheduleAttendees?: string[]; // userId 列表
 }
 
 export interface JoinMeetingPayload {

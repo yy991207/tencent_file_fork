@@ -15,9 +15,6 @@
 import { onMounted, onUnmounted, ref, watch } from 'vue';
 import { ComponentName, conference, ConferenceMainView, RoomEvent as ConferenceRoomEvent } from '@tencentcloud/roomkit-web-vue3';
 import {
-  useUIKit,
-} from '@tencentcloud/uikit-base-component-vue3';
-import {
   useLoginState,
   useRoomState,
   useDeviceState,
@@ -34,17 +31,16 @@ conference.setComponentConfig({ componentName: ComponentName.AIToolsButton, visi
 
 const route = useRoute();
 const router = useRouter();
-const { t } = useUIKit();
 const { handleErrorWithModal } = useRoomModal();
 
 const { loginUserInfo } = useLoginState();
-const { currentRoom } = useRoomState();
+const { currentRoom, scheduleRoom } = useRoomState();
 const { localVideoQuality, openLocalCamera, updateVideoQuality, openLocalMicrophone } = useDeviceState();
 const { muteMicrophone, unmuteMicrophone } = useRoomParticipantState();
 
 const { getMicrophonePreference, getCameraPreference } = useMediaPreference();
 
-const { roomId, password, roomType: roomTypeString, roomName, isOpenCamera: isOpenCameraStr, isOpenMicrophone: isOpenMicrophoneStr, isMicrophoneDisableForAllUser: isMuteAllStr, isCameraDisableForAllUser: isCameraDisabledStr } = route.query as {
+const { roomId, password, roomType: roomTypeString, roomName, isOpenCamera: isOpenCameraStr, isOpenMicrophone: isOpenMicrophoneStr, isMicrophoneDisableForAllUser: isMuteAllStr, isCameraDisableForAllUser: isCameraDisabledStr, scheduleStartTime: scheduleStartTimeStr, scheduleEndTime: scheduleEndTimeStr, scheduleAttendees: scheduleAttendeesStr } = route.query as {
   roomId: string;
   password?: string;
   roomType: string;
@@ -53,12 +49,18 @@ const { roomId, password, roomType: roomTypeString, roomName, isOpenCamera: isOp
   isOpenMicrophone?: string;
   isMicrophoneDisableForAllUser?: string;
   isCameraDisableForAllUser?: string;
+  scheduleStartTime?: string;
+  scheduleEndTime?: string;
+  scheduleAttendees?: string;
 };
 const roomType = Number(roomTypeString) as RoomType;
 const isOpenCameraParam = isOpenCameraStr !== 'false';
 const isOpenMicrophoneParam = isOpenMicrophoneStr !== 'false';
 const isMicrophoneDisableForAllUser = isMuteAllStr === 'true';
 const isCameraDisableForAllUser = isCameraDisabledStr === 'true';
+const scheduleStartTime = scheduleStartTimeStr ? Number(scheduleStartTimeStr) : undefined;
+const scheduleEndTime = scheduleEndTimeStr ? Number(scheduleEndTimeStr) : undefined;
+const scheduleAttendees = scheduleAttendeesStr ? scheduleAttendeesStr.split(',').filter(Boolean) : [];
 
 if (!roomId) {
   router.replace('/home');
@@ -149,9 +151,29 @@ async function handleEnterRoom() {
 }
 
 async function handleStartConference() {
-  const defaultRoomName = roomType === RoomType.Webinar
-    ? `${loginUserInfo.value?.userName || loginUserInfo.value?.userId}${t('Room.Webinar')}`
-    : `${loginUserInfo.value?.userName || loginUserInfo.value?.userId}${t('Room.TemporaryMeeting')}`;
+  const defaultRoomName = `${loginUserInfo.value?.userName || loginUserInfo.value?.userId}的研讨会`;
+
+  // 先预约房间（将会议注册到腾讯侧，使其可通过 getScheduledRoomList 查询）
+  if (scheduleStartTime && scheduleEndTime) {
+    try {
+      await scheduleRoom({
+        roomId,
+        options: {
+          roomName: roomName || defaultRoomName,
+          password,
+          scheduleStartTime,
+          scheduleEndTime,
+          scheduleAttendees: scheduleAttendees.length > 0 ? scheduleAttendees : undefined,
+          isAllMicrophoneDisabled: isMicrophoneDisableForAllUser,
+          isAllCameraDisabled: isCameraDisableForAllUser,
+        },
+      });
+    } catch (error) {
+      // 预约失败不阻塞启动（可能已预约过），仅打印警告
+      console.warn('[Meeting] scheduleRoom failed, proceeding to start:', error);
+    }
+  }
+
   await conference.start({
     roomId,
     roomType,

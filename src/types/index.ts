@@ -100,7 +100,26 @@ export interface TreeNode {
 /**
  * 素材来源类型
  */
-export type MaterialSourceType = 'seminar' | 'live';
+export type MaterialSourceType = 'seminar';
+
+/**
+ * 研讨会表单配置（对应 ScheduleRoomOptions 字段 + StartOptions 字段）
+ */
+export interface MaterialRoomConfig {
+  roomId?: string;
+  roomName?: string;
+  startDate?: string;
+  startTime?: string;
+  duration?: string;    // 秒字符串，如 '1800'
+  timezone?: string;
+  attendees?: { id: string; name: string }[];
+  passwordEnabled?: boolean;
+  password?: string;
+  isOpenCamera?: boolean;
+  isOpenMicrophone?: boolean;
+  isMicrophoneDisableForAllUser?: boolean;
+  isCameraDisableForAllUser?: boolean;
+}
 
 /**
  * 左侧素材列表项
@@ -109,7 +128,8 @@ export interface MaterialItem {
   id: string;
   name: string;
   sourceType: MaterialSourceType;
-  bizId?: string;  // 后端业务 ID，用于接口调用
+  bizId?: string;           // 后端业务 ID，用于接口调用
+  roomConfig?: MaterialRoomConfig; // 保存时写入，重新打开时还原
 }
 
 /**
