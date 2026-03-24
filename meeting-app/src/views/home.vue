@@ -37,7 +37,7 @@ const leftRoom = !isEmbedded && route.query.from === 'room';
 
 const router = useRouter();
 const { login } = useLoginState();
-const { scheduleRoom, getScheduledRoomList } = useRoomState();
+const { scheduleRoom, updateScheduledRoom, cancelScheduledRoom, getScheduledRoomList } = useRoomState();
 
 const { setMicrophonePreference, setCameraPreference } = useMediaPreference();
 
@@ -124,24 +124,52 @@ onMounted(() => {
 
   // ── 保存时预约房间（不进入会议） ──
   cleanupScheduleListener = onParentMessage<ScheduleRoomPayload>(ToChildEvent.SCHEDULE_ROOM, async (data) => {
+    const roomOptions = {
+      roomName: data.roomName,
+      password: data.password,
+      scheduleStartTime: data.scheduleStartTime,
+      scheduleEndTime: data.scheduleEndTime,
+      scheduleAttendees: data.scheduleAttendees,
+      isAllMicrophoneDisabled: data.isAllMicrophoneDisabled,
+      isAllCameraDisabled: data.isAllCameraDisabled,
+    };
     try {
       await ensureLogin(data.userId);
-      await scheduleRoom({
-        roomId: data.roomId,
-        options: {
-          roomName: data.roomName,
-          password: data.password,
-          scheduleStartTime: data.scheduleStartTime,
-          scheduleEndTime: data.scheduleEndTime,
-          scheduleAttendees: data.scheduleAttendees,
-          isAllMicrophoneDisabled: data.isAllMicrophoneDisabled,
-          isAllCameraDisabled: data.isAllCameraDisabled,
-        },
-      });
-      notifyParent(ToParentEvent.ROOM_SCHEDULED, { roomId: data.roomId, success: true });
-    } catch (error: any) {
-      console.error('[Meeting] scheduleRoom 失败', error);
+      try {
+        await scheduleRoom({ roomId: data.roomId, options: roomOptions });
+      } catch (scheduleError: any) {
+        const code = scheduleError?.errorCode ?? scheduleError?.code;
+        if (code === 100010) {
+          // 房间已存在 → 尝试 update
+          console.info('[Meeting] 房间已存在，尝试 updateScheduledRoom', data.roomId);
+          try {
+            await updateScheduledRoom({ roomId: data.roomId, options: roomOptions });
+          } catch (updateError: any) {
+            const updateCode = updateError?.errorCode ?? updateError?.code;
+            if (updateCode === 100006) {
+              // 房间已启动过，无法 update → 先取消再重建
+              console.info('[Meeting] 房间已启动过，先 cancel 再重新 schedule', data.roomId);
+              await cancelScheduledRoom({ roomId: data.roomId });
+              // 腾讯 SDK 限流：cancel 后需等待 ≥1 秒才能重新 schedule（error 100012）
+              await new Promise(resolve => setTimeout(resolve, 1500));
+              await scheduleRoom({ roomId: data.roomId, options: roomOptions });
+            } else {
+              throw updateError;
+            }
+          }
+        } else {
+          throw scheduleError;
+        }
+      }
       notifyParent(ToParentEvent.ROOM_SCHEDULED, {
+        requestId: data.requestId,
+        roomId: data.roomId,
+        success: true,
+      });
+    } catch (error: any) {
+      console.error('[Meeting] scheduleRoom/updateScheduledRoom 失败', error);
+      notifyParent(ToParentEvent.ROOM_SCHEDULED, {
+        requestId: data.requestId,
         roomId: data.roomId,
         success: false,
         error: error?.message ?? 'scheduleRoom failed',
@@ -152,6 +180,7 @@ onMounted(() => {
   // ── 查询已预约房间配置 ──
   cleanupGetConfigListener = onParentMessage<GetScheduledRoomPayload>(ToChildEvent.GET_SCHEDULED_ROOM, async (data) => {
     try {
+      await ensureLogin(data.userId);
       // 分页查询，找到匹配 roomId 的房间
       let cursor = '';
       let found = false;
@@ -161,15 +190,16 @@ onMounted(() => {
         if (room) {
           found = true;
           notifyParent(ToParentEvent.SCHEDULED_ROOM_CONFIG, {
+            requestId: data.requestId,
             roomId: data.roomId,
             roomName: room.roomName,
             found: true,
-            // ScheduleRoomOptions 字段由 room 上读取（SDK 返回 conferenceInfo）
-            scheduleStartTime: (room as any).conferenceInfo?.scheduleStartTime,
-            scheduleEndTime: (room as any).conferenceInfo?.scheduleEndTime,
-            scheduleAttendees: (room as any).conferenceInfo?.scheduleAttendees,
-            isAllMicrophoneDisabled: (room as any).conferenceInfo?.isAllMicrophoneDisabled,
-            isAllCameraDisabled: (room as any).conferenceInfo?.isAllCameraDisabled,
+            password: room.password,
+            scheduleStartTime: room.scheduledStartTime,
+            scheduleEndTime: room.scheduledEndTime,
+            scheduleAttendees: room.scheduleAttendees?.map(u => u.userId),
+            isAllMicrophoneDisabled: room.isAllMicrophoneDisabled,
+            isAllCameraDisabled: room.isAllCameraDisabled,
           });
           break;
         }
@@ -177,11 +207,19 @@ onMounted(() => {
       } while (cursor);
 
       if (!found) {
-        notifyParent(ToParentEvent.SCHEDULED_ROOM_CONFIG, { roomId: data.roomId, found: false });
+        notifyParent(ToParentEvent.SCHEDULED_ROOM_CONFIG, {
+          requestId: data.requestId,
+          roomId: data.roomId,
+          found: false,
+        });
       }
     } catch (error) {
       console.error('[Meeting] getScheduledRoomList 失败', error);
-      notifyParent(ToParentEvent.SCHEDULED_ROOM_CONFIG, { roomId: data.roomId, found: false });
+      notifyParent(ToParentEvent.SCHEDULED_ROOM_CONFIG, {
+        requestId: data.requestId,
+        roomId: data.roomId,
+        found: false,
+      });
     }
   });
 });

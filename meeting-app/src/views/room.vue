@@ -34,7 +34,7 @@ const router = useRouter();
 const { handleErrorWithModal } = useRoomModal();
 
 const { loginUserInfo } = useLoginState();
-const { currentRoom, scheduleRoom } = useRoomState();
+const { currentRoom } = useRoomState();
 const { localVideoQuality, openLocalCamera, updateVideoQuality, openLocalMicrophone } = useDeviceState();
 const { muteMicrophone, unmuteMicrophone } = useRoomParticipantState();
 
@@ -153,39 +153,28 @@ async function handleEnterRoom() {
 async function handleStartConference() {
   const defaultRoomName = `${loginUserInfo.value?.userName || loginUserInfo.value?.userId}的研讨会`;
 
-  // 先预约房间（将会议注册到腾讯侧，使其可通过 getScheduledRoomList 查询）
-  if (scheduleStartTime && scheduleEndTime) {
-    try {
-      await scheduleRoom({
-        roomId,
-        options: {
-          roomName: roomName || defaultRoomName,
-          password,
-          scheduleStartTime,
-          scheduleEndTime,
-          scheduleAttendees: scheduleAttendees.length > 0 ? scheduleAttendees : undefined,
-          isAllMicrophoneDisabled: isMicrophoneDisableForAllUser,
-          isAllCameraDisabled: isCameraDisableForAllUser,
-        },
-      });
-    } catch (error) {
-      // 预约失败不阻塞启动（可能已预约过），仅打印警告
-      console.warn('[Meeting] scheduleRoom failed, proceeding to start:', error);
-    }
-  }
+  // 房间已在保存时由隐藏 bridge 的 scheduleRoom 创建，
+  // 直接用 conference.join() 进入，避免 conference.start() 内部 createRoom 冲突（100010）。
+  // 对于未预约的房间（首次直接点进入），join 会失败，此时降级为 start。
 
-  await conference.start({
-    roomId,
-    roomType,
-    options: {
-      roomName: roomName || defaultRoomName,
-      password,
-      isOpenCamera: isOpenCameraParam,
-      isOpenMicrophone: isOpenMicrophoneParam,
-      isMicrophoneDisableForAllUser,
-      isCameraDisableForAllUser,
-    },
-  });
+  if (scheduleStartTime && scheduleEndTime) {
+    // 已预约的房间 → 直接 join
+    await conference.join({ roomId, roomType, options: { password } });
+  } else {
+    // 未预约（即时创建）→ 用 start
+    await conference.start({
+      roomId,
+      roomType,
+      options: {
+        roomName: roomName || defaultRoomName,
+        password,
+        isOpenCamera: isOpenCameraParam,
+        isOpenMicrophone: isOpenMicrophoneParam,
+        isMicrophoneDisableForAllUser,
+        isCameraDisableForAllUser,
+      },
+    });
+  }
   notifyParent(ToParentEvent.MEETING_STARTED, { roomId, isHost: true });
 }
 

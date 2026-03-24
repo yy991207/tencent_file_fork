@@ -40,24 +40,27 @@ export interface CreateMeetingPayload {
   isMicrophoneDisableForAllUser?: boolean;
   isCameraDisableForAllUser?: boolean;
   // 预约参数（scheduleRoom API）
-  scheduleStartTime?: number;   // 毫秒时间戳
-  scheduleEndTime?: number;     // 毫秒时间戳
+  scheduleStartTime?: number;   // 秒级时间戳
+  scheduleEndTime?: number;     // 秒级时间戳
   scheduleAttendees?: string[]; // userId 列表
 }
 
 export interface ScheduleRoomPayload {
+  requestId?: string;
   userId?: string;
   roomId: string;
   roomName?: string;
   password?: string;
-  scheduleStartTime: number;
-  scheduleEndTime: number;
+  scheduleStartTime: number; // 秒级时间戳
+  scheduleEndTime: number;   // 秒级时间戳
   scheduleAttendees?: string[];
   isAllMicrophoneDisabled?: boolean;
   isAllCameraDisabled?: boolean;
 }
 
 export interface GetScheduledRoomPayload {
+  requestId?: string;
+  userId?: string;
   roomId: string;
 }
 

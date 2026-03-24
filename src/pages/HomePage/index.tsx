@@ -216,7 +216,7 @@ const HomePage: React.FC = () => {
   // 悬停的素材项 ID
   const [hoveredMaterialId, setHoveredMaterialId] = useState<string | null>(null);
   // 当前选中的素材项（研讨会 / 直播）
-  const [selectedMaterialItem, setSelectedMaterialItem] = useState<MaterialItem | null>(null);
+  const [selectedMaterialItemId, setSelectedMaterialItemId] = useState<string | null>(null);
   // 重命名弹窗
   const [renameModalOpen, setRenameModalOpen] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -258,6 +258,10 @@ const HomePage: React.FC = () => {
 
   // 根据 meetingDisplayName 动态生成树数据
   const collapsedTreeData = useMemo(() => buildCollapsedTreeData(meetingDisplayName, materialItems), [meetingDisplayName, materialItems]);
+  const selectedMaterialItem = useMemo(
+    () => materialItems.find((materialItem) => materialItem.id === selectedMaterialItemId) ?? null,
+    [materialItems, selectedMaterialItemId],
+  );
   const directoryTreeData = useMemo(() => buildDirectoryTreeData(meetingDisplayName), [meetingDisplayName]);
 
   // 目录树弹窗的 ref，用于检测点击外部
@@ -518,17 +522,17 @@ const HomePage: React.FC = () => {
           ownerId: 'user_001',
           lastModified: '10:30',
         });
-        setSelectedMaterialItem(null);
+        setSelectedMaterialItemId(null);
         return;
       }
       // 检查是否是素材项
       const materialItem = materialItems.find(item => item.id === key);
       if (materialItem) {
-        setSelectedMaterialItem(materialItem);
+        setSelectedMaterialItemId(materialItem.id);
         setSelectedMeeting(null);
         return;
       }
-      setSelectedMaterialItem(null);
+      setSelectedMaterialItemId(null);
       setExpanded(true);
     }
   };
@@ -903,7 +907,6 @@ const HomePage: React.FC = () => {
           item={selectedMaterialItem}
           onNameChange={(id, newName) => {
             renameMaterialItem(id, newName);
-            setSelectedMaterialItem(prev => prev ? { ...prev, name: newName } : null);
           }}
         />
       ) : (

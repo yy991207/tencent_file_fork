@@ -30,12 +30,13 @@ export const enum ToChildEvent {
 
 /** SCHEDULE_ROOM 指令 payload */
 export interface ScheduleRoomPayload {
+  requestId?: string;
   userId?: string;
   roomId: string;
   roomName?: string;
   password?: string;
-  scheduleStartTime: number;  // 毫秒
-  scheduleEndTime: number;    // 毫秒
+  scheduleStartTime: number;  // 秒级时间戳
+  scheduleEndTime: number;    // 秒级时间戳
   scheduleAttendees?: string[];
   isAllMicrophoneDisabled?: boolean;
   isAllCameraDisabled?: boolean;
@@ -43,6 +44,7 @@ export interface ScheduleRoomPayload {
 
 /** ROOM_SCHEDULED 回调 payload */
 export interface RoomScheduledPayload {
+  requestId?: string;
   roomId: string;
   success: boolean;
   error?: string;
@@ -50,11 +52,14 @@ export interface RoomScheduledPayload {
 
 /** GET_SCHEDULED_ROOM 指令 payload */
 export interface GetScheduledRoomPayload {
+  requestId?: string;
+  userId?: string;
   roomId: string;
 }
 
 /** SCHEDULED_ROOM_CONFIG 回调 payload（对应 ScheduleRoomOptions 字段） */
 export interface ScheduledRoomConfigPayload {
+  requestId?: string;
   roomId: string;
   roomName?: string;
   password?: string;
@@ -87,8 +92,8 @@ export interface CreateMeetingPayload {
   isMicrophoneDisableForAllUser?: boolean;
   isCameraDisableForAllUser?: boolean;
   // 预约参数（scheduleRoom API）
-  scheduleStartTime?: number;   // 毫秒时间戳
-  scheduleEndTime?: number;     // 毫秒时间戳
+  scheduleStartTime?: number;   // 秒级时间戳
+  scheduleEndTime?: number;     // 秒级时间戳
   scheduleAttendees?: string[]; // userId 列表
 }
 

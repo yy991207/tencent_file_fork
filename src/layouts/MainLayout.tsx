@@ -9,6 +9,7 @@ import TopHeader from '../components/TopHeader';
 import RightToolbar from '../components/RightToolbar';
 import AppPanel from '../components/AppPanel';
 import AddFileModal from '../components/AddFileModal';
+import TencentMeetingBridge from '../components/TencentMeetingBridge';
 import styles from './MainLayout.module.less';
 
 const { Content } = Layout;
@@ -56,6 +57,9 @@ const MainLayout: React.FC = () => {
         {/* ==================== 全局弹窗组件 ==================== */}
         {/* 添加资料弹窗 */}
         <AddFileModal />
+
+        {/* 隐藏 iframe 常驻在主布局中，专门负责和 Tencent 会议子应用通信 */}
+        <TencentMeetingBridge />
 
         {/*
           注意：成员管理抽屉 MemberManageDrawer 不在此处渲染

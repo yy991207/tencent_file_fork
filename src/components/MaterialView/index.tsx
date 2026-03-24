@@ -1,5 +1,5 @@
 /**
- * 素材视图组件（研讨会 / 直播）
+ * 素材视图组件（研讨会）
  * 配置项与 TUIRoomKit 参数一一映射：
  *   StartOptions:  roomName, password, isOpenCamera, isOpenMicrophone,
  *                  isMicrophoneDisableForAllUser, isCameraDisableForAllUser
@@ -30,8 +30,9 @@ import {
   CopyOutlined,
   LinkOutlined,
 } from '@ant-design/icons';
-import { MaterialItem } from '../../types';
+import { MaterialItem, MaterialRoomConfig } from '../../types';
 import { useAppStore } from '../../store';
+import { getTencentScheduledRoomConfig, scheduleTencentMeeting } from '../../utils/tencentMeetingBridge';
 import SelectPeopleModal from '../SelectPeople';
 import styles from './index.module.less';
 
@@ -70,8 +71,17 @@ function todayStr() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+function formatDateStr(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function formatTimeStr(date: Date) {
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
 const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
   const navigate = useNavigate();
+  const currentUser = useAppStore((s) => s.currentUser);
   const updateMaterialItemConfig = useAppStore((s) => s.updateMaterialItemConfig);
   const [activeTab, setActiveTab] = useState<MaterialTab>('settings');
   const typeLabel = '研讨会';
@@ -97,26 +107,149 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
 
   const [saved, setSaved] = useState(false);
   const [roomId, setRoomId] = useState('');
+  const [savingToTencent, setSavingToTencent] = useState(false);
+  const [syncingTencentConfig, setSyncingTencentConfig] = useState(false);
 
-  // ===== 从 Zustand 还原已保存的配置 =====
-  useEffect(() => {
-    const cfg = item.roomConfig;
+  const resetFormState = () => {
+    setRoomName('');
+    setIsOpenCamera(true);
+    setIsOpenMicrophone(true);
+    setIsMicrophoneDisableForAllUser(false);
+    setIsCameraDisableForAllUser(false);
+    setPasswordEnabled(false);
+    setPassword('');
+    setStartDate(todayStr());
+    setStartTime('16:00');
+    setDuration('1800');
+    setTimezone('UTC+08:00');
+    setSelectedAttendeeObjects([]);
+    setSaved(false);
+    setRoomId('');
+  };
+
+  const applyRoomConfig = (cfg?: MaterialRoomConfig) => {
+    resetFormState();
     if (!cfg) return;
-    if (cfg.roomId) { setRoomId(cfg.roomId); setSaved(true); }
+
+    if (cfg.roomId) {
+      setRoomId(cfg.roomId);
+      setSaved(true);
+    }
     if (cfg.roomName !== undefined) setRoomName(cfg.roomName);
     if (cfg.startDate) setStartDate(cfg.startDate);
     if (cfg.startTime) setStartTime(cfg.startTime);
     if (cfg.duration) setDuration(cfg.duration);
     if (cfg.timezone) setTimezone(cfg.timezone);
-    if (cfg.attendees) {
-      setSelectedAttendeeObjects(cfg.attendees);
-    }
+    if (cfg.attendees) setSelectedAttendeeObjects(cfg.attendees);
     if (cfg.passwordEnabled !== undefined) setPasswordEnabled(cfg.passwordEnabled);
     if (cfg.password !== undefined) setPassword(cfg.password);
     if (cfg.isOpenCamera !== undefined) setIsOpenCamera(cfg.isOpenCamera);
     if (cfg.isOpenMicrophone !== undefined) setIsOpenMicrophone(cfg.isOpenMicrophone);
     if (cfg.isMicrophoneDisableForAllUser !== undefined) setIsMicrophoneDisableForAllUser(cfg.isMicrophoneDisableForAllUser);
     if (cfg.isCameraDisableForAllUser !== undefined) setIsCameraDisableForAllUser(cfg.isCameraDisableForAllUser);
+  };
+
+  const buildScheduleInfo = () => {
+    // Tencent scheduleRoom 要的是“秒级时间戳”，这里不能直接传 Date.getTime() 的毫秒值。
+    const scheduleStartTimestamp = Math.floor(new Date(`${startDate}T${startTime}:00`).getTime() / 1000);
+    const scheduleEndTimestamp = scheduleStartTimestamp + parseInt(duration, 10);
+
+    return {
+      scheduleStartTimestamp,
+      scheduleEndTimestamp,
+      attendeeIds: selectedAttendeeObjects.map((user) => user.id),
+    };
+  };
+
+  const buildLocalRoomConfig = (rid: string): MaterialRoomConfig => ({
+    roomId: rid,
+    roomName: roomName.trim(),
+    startDate,
+    startTime,
+    duration,
+    timezone,
+    attendees: selectedAttendeeObjects,
+    passwordEnabled,
+    password,
+    isOpenCamera,
+    isOpenMicrophone,
+    isMicrophoneDisableForAllUser,
+    isCameraDisableForAllUser,
+  });
+
+  const buildRoomConfigFromTencent = (
+    existingConfig: MaterialRoomConfig | undefined,
+    payload: Awaited<ReturnType<typeof getTencentScheduledRoomConfig>>,
+  ): MaterialRoomConfig => {
+    const attendeeNameMap = new Map(
+      (existingConfig?.attendees ?? []).map((attendee) => [attendee.id, attendee.name]),
+    );
+
+    const startDateTime = payload.scheduleStartTime ? new Date(payload.scheduleStartTime * 1000) : null;
+    const durationSeconds = payload.scheduleStartTime && payload.scheduleEndTime
+      ? Math.max(0, payload.scheduleEndTime - payload.scheduleStartTime)
+      : null;
+
+    return {
+      roomId: payload.roomId,
+      roomName: payload.roomName ?? existingConfig?.roomName ?? '',
+      startDate: startDateTime ? formatDateStr(startDateTime) : existingConfig?.startDate ?? todayStr(),
+      startTime: startDateTime ? formatTimeStr(startDateTime) : existingConfig?.startTime ?? '16:00',
+      duration: durationSeconds !== null ? String(durationSeconds) : existingConfig?.duration ?? '1800',
+      timezone: existingConfig?.timezone ?? 'UTC+08:00',
+      attendees: (payload.scheduleAttendees ?? existingConfig?.attendees?.map((attendee) => attendee.id) ?? []).map((attendeeId) => ({
+        id: attendeeId,
+        name: attendeeNameMap.get(attendeeId) ?? attendeeId,
+      })),
+      passwordEnabled: payload.password ? true : existingConfig?.passwordEnabled ?? false,
+      password: payload.password ?? existingConfig?.password ?? '',
+      isOpenCamera: existingConfig?.isOpenCamera ?? true,
+      isOpenMicrophone: existingConfig?.isOpenMicrophone ?? true,
+      isMicrophoneDisableForAllUser: payload.isAllMicrophoneDisabled ?? existingConfig?.isMicrophoneDisableForAllUser ?? false,
+      isCameraDisableForAllUser: payload.isAllCameraDisabled ?? existingConfig?.isCameraDisableForAllUser ?? false,
+    };
+  };
+
+  // ===== 从 Zustand 还原已保存的配置 =====
+  useEffect(() => {
+    applyRoomConfig(item.roomConfig);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item.id, item.roomConfig]);
+
+  useEffect(() => {
+    const rid = item.roomConfig?.roomId;
+    if (!rid || !currentUser?.id) return;
+
+    let cancelled = false;
+
+    const syncFromTencent = async () => {
+      setSyncingTencentConfig(true);
+      try {
+        const payload = await getTencentScheduledRoomConfig({
+          userId: currentUser.id,
+          roomId: rid,
+        });
+
+        if (cancelled || !payload.found) return;
+
+        const syncedConfig = buildRoomConfigFromTencent(item.roomConfig, payload);
+        updateMaterialItemConfig(item.id, syncedConfig);
+      } catch (error) {
+        if (!cancelled) {
+          console.warn('[MaterialView] getScheduledRoomConfig failed:', error);
+        }
+      } finally {
+        if (!cancelled) {
+          setSyncingTencentConfig(false);
+        }
+      }
+    };
+
+    void syncFromTencent();
+
+    return () => {
+      cancelled = true;
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item.id]);
 
@@ -125,39 +258,50 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
     return `${window.location.origin}/meeting-app/#/room?roomId=${roomId}&roomType=1&userId=${memberId}`;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // 首次保存时生成房间 ID，后续保存保持不变
     const rid = roomId || String(Math.floor(100000 + Math.random() * 900000));
     if (!roomId) setRoomId(rid);
 
-    // 写入 Zustand，下次打开时自动还原
-    updateMaterialItemConfig(item.id, {
-      roomId: rid,
-      roomName: roomName.trim(),
-      startDate,
-      startTime,
-      duration,
-      timezone,
-      attendees: selectedAttendeeObjects,
-      passwordEnabled,
-      password,
-      isOpenCamera,
-      isOpenMicrophone,
-      isMicrophoneDisableForAllUser,
-      isCameraDisableForAllUser,
-    });
+    // 先把本地配置写进 Zustand，避免用户切换 item 时丢表单内容。
+    const localConfig = buildLocalRoomConfig(rid);
+    updateMaterialItemConfig(item.id, localConfig);
 
     onNameChange?.(item.id, roomName.trim() || typeLabel);
     setSaved(true);
+
+    if (!currentUser?.id) {
+      message.warning('本地配置已保存，但当前没有可用的 Tencent 登录用户');
+      return;
+    }
+
+    const { scheduleStartTimestamp, scheduleEndTimestamp, attendeeIds } = buildScheduleInfo();
+
+    try {
+      setSavingToTencent(true);
+      await scheduleTencentMeeting({
+        userId: currentUser.id,
+        roomId: rid,
+        roomName: roomName.trim() || `研讨会 - ${item.name}`,
+        password: passwordEnabled && password.trim() ? password.trim() : undefined,
+        scheduleStartTime: scheduleStartTimestamp,
+        scheduleEndTime: scheduleEndTimestamp,
+        scheduleAttendees: attendeeIds.length > 0 ? attendeeIds : undefined,
+        isAllMicrophoneDisabled: isMicrophoneDisableForAllUser,
+        isAllCameraDisabled: isCameraDisableForAllUser,
+      });
+      message.success('本地配置已保存，并已同步到 Tencent');
+    } catch (error) {
+      console.error('[MaterialView] scheduleTencentMeeting failed:', error);
+      message.warning('本地配置已保存，但同步 Tencent 失败');
+    } finally {
+      setSavingToTencent(false);
+    }
   };
 
   const handleStartLive = () => {
     const rid = roomId || String(Math.floor(100000 + Math.random() * 900000));
-
-    // 计算预约时间戳（毫秒）
-    const scheduleStartTimestamp = new Date(`${startDate}T${startTime}:00`).getTime();
-    const scheduleEndTimestamp = scheduleStartTimestamp + parseInt(duration) * 1000;
-    const attendeeIds = selectedAttendeeObjects.map(u => u.id);
+    const { scheduleStartTimestamp, scheduleEndTimestamp, attendeeIds } = buildScheduleInfo();
 
     const params = new URLSearchParams({
       action: 'start',
@@ -381,11 +525,23 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
       </div>
 
       <div className={styles.formActions}>
-        <Button type="primary" className={styles.saveBtn} onClick={handleSave}>
+        <Button
+          type="primary"
+          className={styles.saveBtn}
+          onClick={() => void handleSave()}
+          loading={savingToTencent}
+        >
           保存
         </Button>
         <Button className={styles.cancelBtn}>取消</Button>
       </div>
+
+      {syncingTencentConfig && (
+        <div className={styles.launchNotice}>
+          <InfoCircleOutlined style={{ marginRight: 6 }} />
+          正在从 Tencent 同步已预约的会议配置…
+        </div>
+      )}
 
       {/* 邀请链接 — 保存后且有参会成员时展示 */}
       {saved && roomId && selectedAttendeeObjects.length > 0 && (
