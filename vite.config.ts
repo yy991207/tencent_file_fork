@@ -9,11 +9,13 @@ const sdkAppIdMatch  = configYaml.match(/sdkAppId:\s*(\d+)/);
 const secretKeyMatch = configYaml.match(/secretKey:\s*([a-f0-9A-F]+)/);
 const bizIdMatch     = configYaml.match(/^bizId:\s*(\S+)/m);
 const tokenMatch     = configYaml.match(/^token:\s*(\S+)/m);
+const meetingBaseUrlMatch = configYaml.match(/^meetingBaseUrl:\s*(\S+)/m);
 
 const TRTC_SDK_APP_ID  = sdkAppIdMatch  ? Number(sdkAppIdMatch[1])  : 0;
 const TRTC_SECRET_KEY  = secretKeyMatch ? secretKeyMatch[1]         : '';
 const DEBUG_BIZ_ID     = bizIdMatch     ? bizIdMatch[1]             : '';
 const DEBUG_TOKEN      = tokenMatch     ? tokenMatch[1]             : '';
+const MEETING_BASE_URL = meetingBaseUrlMatch ? meetingBaseUrlMatch[1] : '';
 
 if (!TRTC_SDK_APP_ID || !TRTC_SECRET_KEY) {
   console.warn('[vite] ⚠️  config.yaml 中未找到 trtc.sdkAppId 或 trtc.secretKey');
@@ -27,6 +29,7 @@ export default defineConfig({
     __TRTC_SECRET_KEY__: JSON.stringify(TRTC_SECRET_KEY),
     __DEBUG_BIZ_ID__:    JSON.stringify(DEBUG_BIZ_ID),
     __DEBUG_TOKEN__:     JSON.stringify(DEBUG_TOKEN),
+    __MEETING_BASE_URL__: JSON.stringify(MEETING_BASE_URL),
   },
   server: {
     host: true,

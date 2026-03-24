@@ -5,6 +5,9 @@
  *                  isMicrophoneDisableForAllUser, isCameraDisableForAllUser
  *   Schedule API:  scheduleStartTime（日期+时间）, scheduleDuration, scheduleAttendees
  */
+// 由 vite.config.ts 从 config.yaml 注入，会议邀请链接基础地址
+declare const __MEETING_BASE_URL__: string;
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Checkbox, Input, message, Select, Switch, Tag, Tooltip } from 'antd';
@@ -109,6 +112,7 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
   const [roomId, setRoomId] = useState('');
   const [savingToTencent, setSavingToTencent] = useState(false);
   const [syncingTencentConfig, setSyncingTencentConfig] = useState(false);
+  const [tencentConfirmed, setTencentConfirmed] = useState(false);
 
   const resetFormState = () => {
     setRoomName('');
@@ -125,6 +129,7 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
     setSelectedAttendeeObjects([]);
     setSaved(false);
     setRoomId('');
+    setTencentConfirmed(false);
   };
 
   const applyRoomConfig = (cfg?: MaterialRoomConfig) => {
@@ -234,6 +239,7 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
 
         const syncedConfig = buildRoomConfigFromTencent(item.roomConfig, payload);
         updateMaterialItemConfig(item.id, syncedConfig);
+        setTencentConfirmed(true);
       } catch (error) {
         if (!cancelled) {
           console.warn('[MaterialView] getScheduledRoomConfig failed:', error);
@@ -255,7 +261,8 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
 
   /** 生成指定成员的专属邀请链接 */
   const getInviteLink = (memberId: string) => {
-    return `${window.location.origin}/meeting-app/#/room?roomId=${roomId}&roomType=1&userId=${memberId}`;
+    const base = __MEETING_BASE_URL__ || window.location.origin;
+    return `${base}/meeting-app/#/room?roomId=${roomId}&roomType=1&userId=${memberId}`;
   };
 
   const handleSave = async () => {
@@ -291,6 +298,7 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
         isAllCameraDisabled: isCameraDisableForAllUser,
       });
       message.success('本地配置已保存，并已同步到 Tencent');
+      setTencentConfirmed(true);
     } catch (error) {
       console.error('[MaterialView] scheduleTencentMeeting failed:', error);
       message.warning('本地配置已保存，但同步 Tencent 失败');
@@ -543,8 +551,8 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
         </div>
       )}
 
-      {/* 邀请链接 — 保存后且有参会成员时展示 */}
-      {saved && roomId && selectedAttendeeObjects.length > 0 && (
+      {/* 邀请链接 — 腾讯侧确认预约成功且有参会成员时展示 */}
+      {tencentConfirmed && roomId && selectedAttendeeObjects.length > 0 && (
         <div className={styles.inviteSection}>
           <div className={styles.inviteSectionHeader}>
             <LinkOutlined style={{ marginRight: 6 }} />
