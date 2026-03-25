@@ -190,8 +190,12 @@ onMounted(() => {
       let found = false;
       do {
         const result = await getScheduledRoomList({ cursor });
+        // [临时日志] 查看腾讯返回的完整数据，确认后删除
+        console.log('[DEBUG] getScheduledRoomList 完整返回:', JSON.stringify(result, null, 2));
         const room = result.scheduledRoomList.find(r => r.roomId === data.roomId);
         if (room) {
+          // [临时日志] 查看匹配到的房间完整字段，确认后删除
+          console.log('[DEBUG] 匹配到的 room 对象:', JSON.stringify(room, null, 2));
           found = true;
           notifyParent(ToParentEvent.SCHEDULED_ROOM_CONFIG, {
             requestId: data.requestId,

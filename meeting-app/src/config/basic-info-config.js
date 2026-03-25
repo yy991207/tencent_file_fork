@@ -5,31 +5,15 @@
 import LibGenerateTestUserSig from './lib-generate-test-usersig-es.min';
 
 /**
- * Tencent Cloud SDKAppId, which should be replaced with user's SDKAppId.
- * Enter Tencent Cloud TRTC [Console] (https://console.cloud.tencent.com/trtc ) to create an application,
- * and you will see the SDKAppId.
- * It is a unique identifier used by Tencent Cloud to identify users.
- *
+ * SDKAppId 和 SecretKey 由 vite.config.ts 在构建时从根目录 config.yaml 读取并注入，
+ * 不在源码中硬编码，方便统一管理和修改。
  */
 
-export const SDKAPPID = 1600133055;
+// 由 vite.config.ts define 注入，值来自 config.yaml -> trtc.sdkAppId
+export const SDKAPPID = __TRTC_SDK_APP_ID__;
 
-/**
- * Encryption key for calculating signature, which can be obtained in the following steps:
- *
- * Step1. Enter Tencent Cloud TRTC [Console](https://console.cloud.tencent.com/rav ),
- * and create an application if you don't have one.
- * Step2. Click your application to find "Quick Start".
- * Step3. Click "View Secret Key" to see the encryption key for calculating UserSig,
- * and copy it to the following variable.
- *
- * Notes: this method is only applicable for debugging Demo. Before official launch,
- * please migrate the UserSig calculation code and key to your backend server to avoid
- * unauthorized traffic use caused by the leakage of encryption key.
- * Document: https://intl.cloud.tencent.com/document/product/647/35166#Server
- *
- */
-export const SDKSECRETKEY = 'cea6c6d7429f07cb7e3a6410c931a8ab27f0a75b5987761a824446afe5563dbe';
+// 由 vite.config.ts define 注入，值来自 config.yaml -> trtc.secretKey
+export const SDKSECRETKEY = __TRTC_SECRET_KEY__;
 
 /**
  * Signature expiration time, which should not be too short
