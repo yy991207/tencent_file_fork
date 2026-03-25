@@ -24,12 +24,14 @@ import {
   VideoCameraOutlined,
   MoreOutlined,
   PlayCircleOutlined,
+  DesktopOutlined,
 } from '@ant-design/icons';
 import FolderIcon from '../../components/FolderIcon';
 import FileList from '../../components/FileList';
 import RightContent from '../../components/RightContent';
 import MeetingView from '../../components/MeetingView';
 import MaterialView from '../../components/MaterialView';
+import CloudDesktopView from '../../components/CloudDesktopView';
 import MemberManageDrawer from '../../components/MemberManageDrawer';
 import { useAppStore } from '../../store';
 import { FileItem, FileType, MaterialItem } from '../../types';
@@ -60,7 +62,9 @@ const buildCollapsedTreeData = (meetingName: string, materials: MaterialItem[]):
     key: item.id,
     icon: item.sourceType === 'seminar'
       ? <TeamOutlined style={{ color: '#4A90D9' }} />
-      : <PlayCircleOutlined style={{ color: '#F56C6C' }} />,
+      : item.sourceType === 'cloud-desktop'
+        ? <DesktopOutlined style={{ color: '#10B981' }} />
+        : <PlayCircleOutlined style={{ color: '#F56C6C' }} />,
     isLeaf: true,
   })),
 ];
@@ -903,12 +907,21 @@ const HomePage: React.FC = () => {
           }}
         />
       ) : selectedMaterialItem ? (
-        <MaterialView
-          item={selectedMaterialItem}
-          onNameChange={(id, newName) => {
-            renameMaterialItem(id, newName);
-          }}
-        />
+        selectedMaterialItem.sourceType === 'cloud-desktop' ? (
+          <CloudDesktopView
+            item={selectedMaterialItem}
+            onNameChange={(id, newName) => {
+              renameMaterialItem(id, newName);
+            }}
+          />
+        ) : (
+          <MaterialView
+            item={selectedMaterialItem}
+            onNameChange={(id, newName) => {
+              renameMaterialItem(id, newName);
+            }}
+          />
+        )
       ) : (
         <RightContent />
       )}

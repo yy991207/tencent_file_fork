@@ -3,7 +3,7 @@
  * 使用 Zustand 进行状态管理，轻量且易于使用
  */
 import { create } from 'zustand';
-import { FileItem, FolderInfo, UserInfo, ModalType, FolderMember, PermissionType, MaterialItem, MaterialSourceType, MaterialRoomConfig } from '../types';
+import { FileItem, FolderInfo, UserInfo, ModalType, FolderMember, PermissionType, MaterialItem, MaterialSourceType, MaterialRoomConfig, CloudDesktopConfig, CloudDesktopStatus } from '../types';
 
 /**
  * 应用全局状态接口
@@ -52,6 +52,8 @@ interface AppState {
   addMaterialItem: (sourceType: MaterialSourceType) => void;
   renameMaterialItem: (id: string, name: string) => void;
   updateMaterialItemConfig: (id: string, config: MaterialRoomConfig) => void;
+  updateCloudDesktopConfig: (id: string, config: Partial<CloudDesktopConfig>) => void;
+  updateCloudDesktopStatus: (id: string, status: CloudDesktopStatus) => void;
 }
 
 /**
@@ -134,6 +136,16 @@ export const useAppStore = create<AppState>((set) => ({
   updateMaterialItemConfig: (id, config) => set((state) => ({
     materialItems: state.materialItems.map((item) =>
       item.id === id ? { ...item, roomConfig: { ...item.roomConfig, ...config } } : item
+    ),
+  })),
+  updateCloudDesktopConfig: (id, config) => set((state) => ({
+    materialItems: state.materialItems.map((item) =>
+      item.id === id ? { ...item, cloudDesktopConfig: { ...item.cloudDesktopConfig, ...config } } : item
+    ),
+  })),
+  updateCloudDesktopStatus: (id, status) => set((state) => ({
+    materialItems: state.materialItems.map((item) =>
+      item.id === id ? { ...item, cloudDesktopConfig: { ...item.cloudDesktopConfig, status } } : item
     ),
   })),
 }));

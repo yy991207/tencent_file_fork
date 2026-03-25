@@ -12,6 +12,7 @@ import {
   SnippetsOutlined,
   ContainerOutlined,
   TeamOutlined,
+  DesktopOutlined,
 } from '@ant-design/icons';
 import { useAppStore } from '../../store';
 import styles from './index.module.less';
@@ -122,6 +123,7 @@ const AddFileModal: React.FC = () => {
             <Button icon={<SnippetsOutlined style={{ color: '#F59E0B' }} />}>网页剪存</Button>
             <Button icon={<ContainerOutlined style={{ color: '#6366F1' }} />}>粘贴文本</Button>
             <Button icon={<TeamOutlined style={{ color: '#4A90D9' }} />} onClick={() => { addMaterialItem('seminar'); handleClose(); }}>研讨会</Button>
+            <Button icon={<DesktopOutlined style={{ color: '#10B981' }} />} onClick={() => { addMaterialItem('cloud-desktop'); handleClose(); }}>云电脑</Button>
           </div>
         </div>
       </div>

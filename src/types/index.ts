@@ -100,7 +100,7 @@ export interface TreeNode {
 /**
  * 素材来源类型
  */
-export type MaterialSourceType = 'seminar';
+export type MaterialSourceType = 'seminar' | 'cloud-desktop';
 
 /**
  * 研讨会表单配置（对应 ScheduleRoomOptions 字段 + StartOptions 字段）
@@ -122,6 +122,24 @@ export interface MaterialRoomConfig {
 }
 
 /**
+ * 云电脑运行状态
+ */
+export type CloudDesktopStatus = 'not-created' | 'stopped' | 'running' | 'restarting';
+
+/**
+ * 云电脑配置
+ */
+export interface CloudDesktopConfig {
+  desktopName?: string;
+  imageId?: string;           // 镜像标识，如 'win11', 'ubuntu2204'
+  imageName?: string;         // 镜像显示名称
+  cpuCores?: number;          // CPU 核心数：2 | 4 | 8 | 16
+  memoryGB?: number;          // 内存 GB：4 | 8 | 16 | 32
+  diskGB?: number;            // 系统盘 GB：50 | 100 | 200 | 500
+  status?: CloudDesktopStatus;
+}
+
+/**
  * 左侧素材列表项
  */
 export interface MaterialItem {
@@ -129,7 +147,8 @@ export interface MaterialItem {
   name: string;
   sourceType: MaterialSourceType;
   bizId?: string;           // 后端业务 ID，用于接口调用
-  roomConfig?: MaterialRoomConfig; // 保存时写入，重新打开时还原
+  roomConfig?: MaterialRoomConfig; // 研讨会配置，保存时写入
+  cloudDesktopConfig?: CloudDesktopConfig; // 云电脑配置
 }
 
 /**
