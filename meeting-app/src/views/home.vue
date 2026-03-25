@@ -39,6 +39,9 @@ const router = useRouter();
 const { login } = useLoginState();
 const { scheduleRoom, updateScheduledRoom, cancelScheduledRoom, getScheduledRoomList } = useRoomState();
 
+// 当前 iframe 会话是否已完成 SDK 登录（localStorage 有数据不代表 SDK 已登录）
+let sessionLoggedIn = false;
+
 const { setMicrophonePreference, setCameraPreference } = useMediaPreference();
 
 const handleCameraPreferenceChange = (isOpen: boolean) => {
@@ -89,9 +92,10 @@ let cleanupGetConfigListener: (() => void) | null = null;
 /** 确保登录（iframe 模式下自动完成） */
 async function ensureLogin(userId?: string): Promise<void> {
   if (!isEmbedded || !userId) return;
-  if (localStorage.getItem('tuiRoom-userInfo')) return;
+  if (sessionLoggedIn) return;
   const userSig = genTestUserSig(userId);
   await login({ userId, userSig, sdkAppId: SDKAPPID });
+  sessionLoggedIn = true;
   localStorage.setItem('tuiRoom-userInfo', JSON.stringify({
     SDKAppID: SDKAPPID, userID: userId, userSig,
   }));
