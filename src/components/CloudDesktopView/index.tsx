@@ -243,21 +243,20 @@ const CloudDesktopView: React.FC<CloudDesktopViewProps> = ({ item, onNameChange 
   const renderSettings = () => (
     <div className={styles.settingsForm}>
       {/* 云电脑名称 */}
-      <div className={styles.formRow}>
-        <label className={styles.formLabel}><span className={styles.required}>*</span> 名称</label>
-        <div className={styles.formControl}>
-          <Input
-            className={styles.formInput}
-            placeholder="请输入云电脑名称"
-            value={desktopName}
-            onChange={(e) => setDesktopName(e.target.value)}
-            maxLength={50}
-          />
-        </div>
-      </div>
-
-      {/* 镜像选择 — 全宽区块 */}
       <div className={styles.formSectionLabel}>
+        <span className={styles.required}>*</span> 云电脑名称
+      </div>
+      <Input
+        className={styles.nameInput}
+        placeholder="请输入云电脑名称"
+        value={desktopName}
+        onChange={(e) => setDesktopName(e.target.value)}
+        maxLength={50}
+        size="large"
+      />
+
+      {/* 镜像选择 */}
+      <div className={styles.formSectionLabel} style={{ marginTop: 28 }}>
         <span className={styles.required}>*</span> 选择系统镜像
       </div>
 
