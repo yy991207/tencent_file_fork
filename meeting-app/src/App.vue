@@ -13,6 +13,7 @@ import { TUIMessageBox, UIKitProvider, useUIKit } from '@tencentcloud/uikit-base
 import { useLoginState, useRoomModal, LoginEvent } from 'tuikit-atomicx-vue3/room';
 import { useRoute, useRouter } from 'vue-router';
 import { isPC } from './utils/utils';
+import { isInIframe } from './utils/postMessageBridge';
 
 const { t } = useUIKit();
 const initialTheme = ref(localStorage.getItem('tuiRoom-theme') || 'light');
@@ -81,13 +82,23 @@ onMounted(async () => {
   if (route.path === '/login') {
     return;
   }
+  // iframe 嵌入模式跳过自动登录检查，由 home.vue 的 ensureLogin 按需处理
+  if (isInIframe()) {
+    return;
+  }
   const storedData = localStorage.getItem('tuiRoom-userInfo') || '{}';
   const userInfo = JSON.parse(storedData);
+  // 校验必要字段，缺失则直接跳登录页，避免 SDK 创建失败
+  if (!userInfo.SDKAppID || !userInfo.userID || !userInfo.userSig) {
+    localStorage.removeItem('tuiRoom-userInfo');
+    router.replace({ path: '/login', query: { redirect: route.fullPath } });
+    return;
+  }
   try {
     await login({
       userId: userInfo.userID,
       userSig: userInfo.userSig,
-      sdkAppId: userInfo.SDKAppID,
+      sdkAppId: Number(userInfo.SDKAppID),
     });
   } catch (error: any) {
     console.error('Login failed:', error);
