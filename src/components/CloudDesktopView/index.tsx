@@ -430,7 +430,7 @@ const CloudDesktopView: React.FC<CloudDesktopViewProps> = ({ item, onNameChange 
           <DesktopOutlined style={{ fontSize: 18, color: '#10B981' }} />
           <span className={styles.viewTitle}>{item.name || '云电脑'}</span>
         </div>
-        <div className={styles.navRight}>
+        <div className={styles.navCenter}>
           <Button
             className={`${styles.actionBtn} ${activeTab === 'settings' ? styles.actionBtnActive : ''}`}
             icon={<SettingOutlined />}

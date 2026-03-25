@@ -856,7 +856,7 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
             {roomName || `未命名${typeLabel}`}
           </span>
         </div>
-        <div className={styles.navRight}>
+        <div className={styles.navCenter}>
           <Button
             className={`${styles.actionBtn} ${activeTab === 'settings' ? styles.actionBtnActive : ''}`}
             icon={<SettingOutlined />}
@@ -881,9 +881,6 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
           >
             {typeLabel}详情
           </Button>
-          <div className={styles.navDivider} />
-          <PrinterOutlined className={styles.navIcon} />
-          <ExportOutlined className={styles.navIcon} />
         </div>
       </div>
 
