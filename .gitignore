@@ -4,6 +4,9 @@ doc/
 # Build output
 dist/
 
+# 会议子应用构建产物（预构建的静态文件，不需要提交）
+public/meeting-app/
+
 # Editor directories and files
 .idea/
 .vscode/

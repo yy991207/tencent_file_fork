@@ -229,33 +229,55 @@
   margin-bottom: 16px;
 }
 
-.filterCats {
+.imageTabs {
   display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
+  gap: 0;
+  border-bottom: 1px solid #e8e8e8;
 }
 
-.filterCat {
-  padding: 4px 14px;
-  font-size: 13px;
-  color: #666;
-  border-radius: 16px;
+.imageTab {
+  padding: 8px 20px;
+  font-size: 14px;
+  color: #333;
   cursor: pointer;
-  transition: all 0.15s;
+  position: relative;
+  transition: color 0.2s;
   white-space: nowrap;
-  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 
   &:hover {
     color: #1677FF;
-    background: #E6F4FF;
   }
 }
 
-.filterCatActive {
+.imageTabActive {
   color: #1677FF;
   font-weight: 500;
-  background: #E6F4FF;
-  border-color: #91CAFF;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    background: #1677FF;
+    border-radius: 1px;
+  }
+}
+
+.newBadge {
+  display: inline-block;
+  padding: 0 4px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 16px;
+  color: #fff;
+  background: #E5302F;
+  border-radius: 2px;
+  transform: scale(0.9);
 }
 
 .filterSearch {

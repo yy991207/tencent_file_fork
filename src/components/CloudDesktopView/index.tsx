@@ -2,6 +2,7 @@
  * 云电脑视图组件
  * 配置项：云电脑名称、镜像市场选择、CPU、内存、磁盘
  * 页签：配置（settings）+ 运行（run）
+ * 镜像数据从 mock JSON 加载，图标根据 JSON 配置动态渲染
  */
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Button, Input, message, Pagination, Tag } from 'antd';
@@ -19,9 +20,12 @@ import {
   SearchOutlined,
   StarFilled,
   CheckCircleFilled,
+  ShoppingCartOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons';
 import { useAppStore } from '../../store';
 import type { MaterialItem, CloudDesktopStatus } from '../../types';
+import cloudImagesData from '../../../interface-structure/cloud-images.json';
 import styles from './index.module.less';
 
 type CloudDesktopTab = 'settings' | 'run';
@@ -31,8 +35,17 @@ interface CloudDesktopViewProps {
   onNameChange?: (id: string, newName: string) => void;
 }
 
-/** 镜像市场数据 */
-interface ImageItem {
+// ── JSON 数据类型 ──
+interface IconConfig {
+  type: 'text' | 'antd';
+  text?: string;
+  name?: string;
+  fontSize: number;
+  fontWeight?: number;
+  color: string;
+}
+
+interface RawImageItem {
   id: string;
   name: string;
   imageId: string;
@@ -42,87 +55,52 @@ interface ImageItem {
   diskSize: string;
   updatedAt: string;
   publisherUid: string;
-  icon: React.ReactNode;
+  icon: IconConfig;
   iconBg: string;
   category: string;
 }
 
-const COMMUNITY_IMAGES: ImageItem[] = [
-  {
-    id: 'img-wps365', name: '金山WPS365-AI一体化办公', imageId: 'img-0aae4rxv6py6e9g63',
-    os: 'Windows', tags: ['WPS'], rating: 4, diskSize: '50 GiB', updatedAt: '2026-03-16 18:16:36',
-    publisherUid: '190934003905...', icon: <span style={{ fontSize: 22, fontWeight: 700, color: '#D4380D' }}>W</span>, iconBg: '#FFF2E8',
-    category: '通用办公',
-  },
-  {
-    id: 'img-openclaw', name: 'OpenClaw & CoPaw & OpenWork', imageId: 'img-0aae4rxv3pz7idcot',
-    os: 'Windows', tags: ['AI助手'], rating: 4, diskSize: '60 GiB', updatedAt: '2026-03-10 22:11:21',
-    publisherUid: '190934003905...', icon: <span style={{ fontSize: 18, fontWeight: 800, color: '#1890FF' }}>CP</span>, iconBg: '#E6F7FF',
-    category: '代码开发',
-  },
-  {
-    id: 'img-codingplan', name: 'cucloud_codingplan', imageId: 'img-0aae4rgm4ln3bd5ae',
-    os: 'Windows', tags: ['AI助手'], rating: 5, diskSize: '100 GiB', updatedAt: '2026-02-27 23:40:28',
-    publisherUid: '190934003905...', icon: <CloudServerOutlined style={{ fontSize: 22, color: '#722ED1' }} />, iconBg: '#F9F0FF',
-    category: '代码开发',
-  },
-  {
-    id: 'img-mirror', name: 'cucloud_mirror', imageId: 'img-0ae8jv3bm0ao1hx5m',
-    os: 'Windows', tags: ['AI'], rating: 4, diskSize: '50 GiB', updatedAt: '2026-02-03 14:56:12',
-    publisherUid: '144886568182...', icon: <CloudServerOutlined style={{ fontSize: 22, color: '#1890FF' }} />, iconBg: '#E6F7FF',
-    category: 'AI助手',
-  },
-  {
-    id: 'img-clawdbot', name: 'OpenClaw(Clawdbot)', imageId: 'img-0ae8jvkn4tzatayay',
-    os: 'Linux', tags: ['AI助手'], rating: 4, diskSize: '40 GiB', updatedAt: '2026-03-17 11:35:33',
-    publisherUid: '190934003905...', icon: <CodeOutlined style={{ fontSize: 22, color: '#FA541C' }} />, iconBg: '#FFF2E8',
-    category: 'AI助手',
-  },
-  {
-    id: 'img-aisimu', name: '具身智能_AI仿真核心包', imageId: 'img-0aae4rgit4jlxn5of',
-    os: 'Linux', tags: ['AI', '具身智能'], rating: 5, diskSize: '250 GiB', updatedAt: '2026-01-20 15:29:22',
-    publisherUid: '148211952035...', icon: <DashboardOutlined style={{ fontSize: 22, color: '#13C2C2' }} />, iconBg: '#E6FFFB',
-    category: 'AI助手',
-  },
-  {
-    id: 'img-comfyui-ubuntu', name: 'ComfyUI-Ubuntu系统纯净版', imageId: 'img-0aae4rgipgeiliwnn',
-    os: 'Linux', tags: ['ComfyUI', '图像'], rating: 4, diskSize: '400 GiB', updatedAt: '2026-01-13 12:01:10',
-    publisherUid: '190934003905...', icon: <span style={{ fontSize: 18, fontWeight: 800, color: '#52C41A' }}>UI</span>, iconBg: '#F6FFED',
-    category: '设计渲染',
-  },
-  {
-    id: 'img-industry-design', name: '工业设计_专业渲染版', imageId: 'img-0a8urjaeew2ewsdpb',
-    os: 'Windows', tags: ['设计渲染'], rating: 4, diskSize: '70 GiB', updatedAt: '2026-01-12 12:14:51',
-    publisherUid: '190934003905...', icon: <span style={{ fontSize: 18, color: '#1890FF' }}>3D</span>, iconBg: '#E6F7FF',
-    category: '设计渲染',
-  },
-  {
-    id: 'img-security', name: '安全开发_全栈工具集', imageId: 'img-0aae4rgleniusunl0',
-    os: 'Windows', tags: ['代码开发'], rating: 4, diskSize: '100 GiB', updatedAt: '2026-01-08 11:47:39',
-    publisherUid: '190934003905...', icon: <span style={{ fontSize: 18, fontWeight: 700, color: '#52C41A' }}>&lt;/&gt;</span>, iconBg: '#F6FFED',
-    category: '代码开发',
-  },
-  {
-    id: 'img-ecommerce', name: '全平台运营_电商工作台集成', imageId: 'img-0aae4rglenjvrqliv',
-    os: 'Windows', tags: ['电商运营'], rating: 4, diskSize: '50 GiB', updatedAt: '2026-01-08 11:41:55',
-    publisherUid: '190934003905...', icon: <span style={{ fontSize: 22, color: '#1890FF' }}>🛒</span>, iconBg: '#E6F7FF',
-    category: '通用办公',
-  },
-  {
-    id: 'img-virtual-live', name: '虚拟直播_多平台适配版', imageId: 'img-0aae4rglenhwqmjmp',
-    os: 'Windows', tags: ['数字人直播'], rating: 4, diskSize: '60 GiB', updatedAt: '2026-01-08 11:37:34',
-    publisherUid: '190934003905...', icon: <PlayCircleOutlined style={{ fontSize: 22, color: '#13C2C2' }} />, iconBg: '#E6FFFB',
-    category: '设计渲染',
-  },
-  {
-    id: 'img-enterprise-office', name: '企业办公_高效协作套件', imageId: 'img-0aae4rglendyoefof',
-    os: 'Windows', tags: ['通用办公', '外包客服', '分支门店'], rating: 4, diskSize: '50 GiB', updatedAt: '2026-01-08 11:29:12',
-    publisherUid: '190934003905...', icon: <DesktopOutlined style={{ fontSize: 22, color: '#722ED1' }} />, iconBg: '#F9F0FF',
-    category: '通用办公',
-  },
-];
+interface ImageTab {
+  key: string;
+  label: string;
+  isNew?: boolean;
+}
 
-const CATEGORIES = ['全部', 'AI助手', '代码开发', '设计渲染', '教育培训', '通用办公'];
+// ── antd 图标名称到组件的映射 ──
+const ANTD_ICON_MAP: Record<string, React.ComponentType<{ style?: React.CSSProperties }>> = {
+  CloudServerOutlined,
+  CodeOutlined,
+  DashboardOutlined,
+  PlayCircleOutlined,
+  DesktopOutlined,
+  ShoppingCartOutlined,
+  AppstoreOutlined,
+};
+
+// 根据 JSON 中的图标配置渲染对应的 React 图标
+const renderIcon = (cfg: IconConfig): React.ReactNode => {
+  if (cfg.type === 'antd') {
+    const IconComp = ANTD_ICON_MAP[cfg.name || ''];
+    if (IconComp) {
+      return <IconComp style={{ fontSize: cfg.fontSize, color: cfg.color }} />;
+    }
+    // 兜底：未匹配到的 antd 图标用首字母
+    return <span style={{ fontSize: cfg.fontSize, color: cfg.color }}>{(cfg.name || '?')[0]}</span>;
+  }
+  // type === 'text'
+  return (
+    <span style={{ fontSize: cfg.fontSize, fontWeight: cfg.fontWeight ?? 400, color: cfg.color }}>
+      {cfg.text}
+    </span>
+  );
+};
+
+// ── 从 JSON 加载页签和镜像数据 ──
+const IMAGE_TABS: ImageTab[] = cloudImagesData.tabs;
+const ALL_IMAGES: RawImageItem[] = cloudImagesData.images as RawImageItem[];
+
+// "全部镜像"使用固定 key
+const ALL_TAB_KEY = '全部镜像';
 
 const STATUS_MAP: Record<CloudDesktopStatus, { label: string; className: string }> = {
   'not-created': { label: '未创建', className: styles.statusNotCreated },
@@ -139,12 +117,12 @@ const CloudDesktopView: React.FC<CloudDesktopViewProps> = ({ item, onNameChange 
 
   const [activeTab, setActiveTab] = useState<CloudDesktopTab>('settings');
   const [desktopName, setDesktopName] = useState('');
-  const [selectedImageId, setSelectedImageId] = useState('img-wps365');
+  const [selectedImageId, setSelectedImageId] = useState(ALL_IMAGES[0]?.id ?? '');
   const [saved, setSaved] = useState(false);
 
-  // 镜像筛选状态
+  // 镜像筛选状态，默认选中"全部镜像"
   const [imageSearch, setImageSearch] = useState('');
-  const [imageCategory, setImageCategory] = useState('全部');
+  const [imageCategory, setImageCategory] = useState(ALL_TAB_KEY);
   const [imagePage, setImagePage] = useState(1);
 
   const mountedRef = useRef(true);
@@ -159,17 +137,17 @@ const CloudDesktopView: React.FC<CloudDesktopViewProps> = ({ item, onNameChange 
   useEffect(() => {
     const cfg = item.cloudDesktopConfig;
     setDesktopName(cfg?.desktopName ?? '');
-    setSelectedImageId(cfg?.imageId ?? 'img-wps365');
+    setSelectedImageId(cfg?.imageId ?? ALL_IMAGES[0]?.id ?? '');
     setSaved(!!cfg?.desktopName);
     setActiveTab('settings');
   }, [item.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 过滤镜像列表
   const filteredImages = useMemo(() => {
-    let list = COMMUNITY_IMAGES;
-    if (imageCategory !== '全部') {
-      list = list.filter((img) => img.category === imageCategory);
-    }
+    // "全部镜像"不做分类过滤，其余按 category 匹配
+    let list = imageCategory === ALL_TAB_KEY
+      ? ALL_IMAGES
+      : ALL_IMAGES.filter((img) => img.category === imageCategory);
     if (imageSearch.trim()) {
       const keyword = imageSearch.trim().toLowerCase();
       list = list.filter((img) =>
@@ -189,7 +167,7 @@ const CloudDesktopView: React.FC<CloudDesktopViewProps> = ({ item, onNameChange 
   // 重置分页
   useEffect(() => { setImagePage(1); }, [imageCategory, imageSearch]);
 
-  const selectedImage = COMMUNITY_IMAGES.find((img) => img.id === selectedImageId);
+  const selectedImage = ALL_IMAGES.find((img) => img.id === selectedImageId);
 
   /** 渲染星级 */
   const renderStars = (rating: number) => (
@@ -206,7 +184,7 @@ const CloudDesktopView: React.FC<CloudDesktopViewProps> = ({ item, onNameChange 
       message.warning('请输入云电脑名称');
       return;
     }
-    const image = COMMUNITY_IMAGES.find((img) => img.id === selectedImageId);
+    const image = ALL_IMAGES.find((img) => img.id === selectedImageId);
     updateCloudDesktopConfig(item.id, {
       desktopName: desktopName.trim(),
       imageId: selectedImageId,
@@ -260,16 +238,24 @@ const CloudDesktopView: React.FC<CloudDesktopViewProps> = ({ item, onNameChange 
         <span className={styles.required}>*</span> 选择系统镜像
       </div>
 
-      {/* 筛选行：分类标签 + 搜索 */}
+      {/* 筛选行：镜像类型页签 + 搜索 */}
       <div className={styles.filterRow}>
-        <div className={styles.filterCats}>
-          {CATEGORIES.map((cat) => (
+        <div className={styles.imageTabs}>
+          {/* "全部镜像"始终在最前面 */}
+          <div
+            className={`${styles.imageTab} ${imageCategory === ALL_TAB_KEY ? styles.imageTabActive : ''}`}
+            onClick={() => setImageCategory(ALL_TAB_KEY)}
+          >
+            全部镜像
+          </div>
+          {IMAGE_TABS.map((tab) => (
             <div
-              key={cat}
-              className={`${styles.filterCat} ${imageCategory === cat ? styles.filterCatActive : ''}`}
-              onClick={() => setImageCategory(cat)}
+              key={tab.key}
+              className={`${styles.imageTab} ${imageCategory === tab.key ? styles.imageTabActive : ''}`}
+              onClick={() => setImageCategory(tab.key)}
             >
-              {cat}
+              {tab.label}
+              {tab.isNew && <span className={styles.newBadge}>NEW</span>}
             </div>
           ))}
         </div>
@@ -296,7 +282,7 @@ const CloudDesktopView: React.FC<CloudDesktopViewProps> = ({ item, onNameChange 
             )}
             <div className={styles.imgCardTop}>
               <div className={styles.imgCardIcon} style={{ background: img.iconBg }}>
-                {img.icon}
+                {renderIcon(img.icon)}
               </div>
               <div className={styles.imgCardMeta}>
                 <div className={styles.imgCardName}>{img.name}</div>
