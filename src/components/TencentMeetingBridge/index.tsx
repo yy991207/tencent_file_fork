@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { MEETING_APP_ORIGIN, ToParentEvent } from '@/pages/MeetingPage/postMessageBridge';
+import { MEETING_APP_ORIGIN, ToParentEvent } from '@/utils/postMessageBridge';
 import {
   handleTencentMeetingBridgeMessage,
   markTencentMeetingBridgeReady,

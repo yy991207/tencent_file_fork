@@ -6,7 +6,7 @@ import {
   type RoomScheduledPayload,
   type ScheduleRoomPayload,
   type ScheduledRoomConfigPayload,
-} from '@/pages/MeetingPage/postMessageBridge';
+} from '@/utils/postMessageBridge';
 
 type BridgeRequestType = ToChildEvent.SCHEDULE_ROOM | ToChildEvent.GET_SCHEDULED_ROOM;
 

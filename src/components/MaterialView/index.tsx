@@ -9,7 +9,6 @@
 declare const __MEETING_BASE_URL__: string;
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button, Checkbox, Input, message, Select, Switch, Tag, Tooltip } from 'antd';
 import {
   SettingOutlined,
@@ -37,6 +36,7 @@ import { MaterialItem, MaterialRoomConfig } from '../../types';
 import { useAppStore } from '../../store';
 import { getTencentScheduledRoomConfig, scheduleTencentMeeting } from '../../utils/tencentMeetingBridge';
 import SelectPeopleModal from '../SelectPeople';
+import { launchDesktopMeeting } from '@/utils/desktopLauncher';
 import styles from './index.module.less';
 
 type MaterialTab = 'settings' | 'launch' | 'details';
@@ -83,7 +83,6 @@ function formatTimeStr(date: Date) {
 }
 
 const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
-  const navigate = useNavigate();
   const currentUser = useAppStore((s) => s.currentUser);
   const updateMaterialItemConfig = useAppStore((s) => s.updateMaterialItemConfig);
   const [activeTab, setActiveTab] = useState<MaterialTab>('settings');
@@ -307,25 +306,26 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
     }
   };
 
-  const handleStartLive = () => {
+  const handleStartLive = async () => {
     const rid = roomId || String(Math.floor(100000 + Math.random() * 900000));
-    const { scheduleStartTimestamp, scheduleEndTimestamp, attendeeIds } = buildScheduleInfo();
-
-    const params = new URLSearchParams({
-      action: 'start',
-      roomId: rid,
-      roomType: '1',
-      roomName: roomName.trim() || `研讨会 - ${item.name}`,
-      isOpenCamera: String(isOpenCamera),
-      isOpenMicrophone: String(isOpenMicrophone),
-      isMicrophoneDisableForAllUser: String(isMicrophoneDisableForAllUser),
-      isCameraDisableForAllUser: String(isCameraDisableForAllUser),
-      scheduleStartTime: String(scheduleStartTimestamp),
-      scheduleEndTime: String(scheduleEndTimestamp),
-    });
-    if (attendeeIds.length > 0) params.set('scheduleAttendees', attendeeIds.join(','));
-    if (passwordEnabled && password.trim()) params.set('password', password.trim());
-    navigate(`/meeting?${params.toString()}`);
+    if (!currentUser?.id) {
+      message.error('未获取到当前用户信息');
+      return;
+    }
+    try {
+      await launchDesktopMeeting({
+        memberId: currentUser.id,
+        roomId: rid,
+        roomName: roomName.trim() || `研讨会 - ${item.name}`,
+      });
+    } catch (err: any) {
+      console.error('[MaterialView] launchDesktopMeeting failed:', err);
+      if (err?.message === 'DESKTOP_NOT_INSTALLED') {
+        message.warning('未检测到会议桌面端，请先安装"腾讯会议白板"应用');
+      } else {
+        message.error('启动桌面端会议失败');
+      }
+    }
   };
 
   const renderSettings = () => (

@@ -1,0 +1,48 @@
+# 应用基本信息
+appId: com.tencent.meeting.whiteboard
+productName: 腾讯会议白板
+
+# 输出目录
+directories:
+  output: release
+  buildResources: build
+
+# 文件打包范围
+files:
+  - dist/**/*
+  - packages/renderer/dist/**/*
+  - node_modules/**/*
+
+# 协议注册 - 让系统识别 tencent-meeting:// 协议
+protocols:
+  - name: 腾讯会议
+    schemes:
+      - tencent-meeting
+
+# macOS 配置
+mac:
+  target:
+    - dmg
+    - zip
+  category: public.app-category.business
+  # 协议处理器在 Info.plist 中通过 protocols 字段自动注册
+
+dmg:
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+
+# Windows 配置
+win:
+  target:
+    - nsis
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  perMachine: true
+  # Windows 协议注册通过注册表实现，electron-builder 会根据 protocols 字段自动写入

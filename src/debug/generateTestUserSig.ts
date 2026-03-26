@@ -1,5 +1,5 @@
 /**
- * ⚠️  仅供调试使用，严禁上线
+ * 仅供调试使用，严禁上线
  *
  * 在前端用 SecretKey 生成 UserSig，适合本地联调阶段快速跑通。
  * 正式上线前必须迁移到服务端生成（SecretKey 暴露在客户端会被逆向）。
@@ -76,8 +76,9 @@ export async function genTestUserSig(memberId: string): Promise<UserSigResult> {
   // Step 4：zlib deflate 压缩（CompressionStream，浏览器内置）
   const compressed = await zlibDeflate(payload);
 
-  // Step 5：base64url 编码
-  const userSig = uint8ToBase64Url(compressed);
+  // Step 5：按腾讯官方规则做 escape 编码（+ -> *、/ -> -、= -> _）
+  // 这里不能用通用 base64url（+ -> -、/ -> _、去掉 =），否则会导致 UserSig 校验失败（70003）
+  const userSig = uint8ToTencentUserSig(compressed);
 
   return { sdkAppId: TRTC_SDK_APP_ID, userId, userSig };
 }
@@ -93,12 +94,12 @@ function uint8ToBase64(data: Uint8Array): string {
   return btoa(binary);
 }
 
-/** Uint8Array → Base64URL（TRTC UserSig 使用的编码，+ → - / → _ 去掉 =） */
-function uint8ToBase64Url(data: Uint8Array): string {
+/** Uint8Array → 腾讯 UserSig 专用编码（与官方 JS 生成器一致） */
+function uint8ToTencentUserSig(data: Uint8Array): string {
   return uint8ToBase64(data)
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
+    .replace(/\+/g, '*')
+    .replace(/\//g, '-')
+    .replace(/=/g, '_');
 }
 
 /** zlib deflate 压缩（与 Node.js zlib.deflateSync 等价） */
