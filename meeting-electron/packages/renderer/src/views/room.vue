@@ -39,6 +39,8 @@ interface RoomKitConference {
   }): Promise<void>;
   leave(): Promise<void>;
   logout(): Promise<void>;
+  on?(eventType: string, callback: (data?: any) => void): void;
+  off?(eventType: string, callback: (data?: any) => void): void;
 }
 
 // 页面状态: loading -> joined / error
@@ -49,6 +51,11 @@ const route = useRoute();
 const router = useRouter();
 let cachedConference: RoomKitConference | null = null;
 let conferenceLoadingPromise: Promise<RoomKitConference> | null = null;
+let hasBoundConferenceExitEvents = false;
+let hasHandledRoomExit = false;
+let boundConference: RoomKitConference | null = null;
+let roomLeaveHandler: (() => void) | null = null;
+let roomDismissHandler: (() => void) | null = null;
 
 /**
  * 通过 RoomKit 的 ESM 入口加载桌面端 SDK
@@ -79,6 +86,67 @@ async function getRoomKitConference(): Promise<RoomKitConference> {
     });
 
   return conferenceLoadingPromise;
+}
+
+/**
+ * 绑定退会事件，确保用户在会议内点击“离开房间”后应用能安全退出。
+ * 不绑定的话，SDK 只会离开房间，Electron 进程会继续停留在桌面端。
+ */
+function bindConferenceExitEvents(conference: RoomKitConference) {
+  if (hasBoundConferenceExitEvents || !conference.on) {
+    return;
+  }
+
+  const handleRoomExit = async (reason: 'leave' | 'dismiss') => {
+    if (hasHandledRoomExit) {
+      return;
+    }
+    hasHandledRoomExit = true;
+    console.log(`[Room] 检测到会议退出事件(${reason})，准备安全退出应用`);
+
+    try {
+      // 退会事件触发时 SDK 通常已经执行过 leave，这里只做登出兜底，避免重复 leave。
+      await conference.logout();
+    } catch (err) {
+      console.warn('[Room] 退出后登出失败（已忽略）:', err);
+    }
+
+    try {
+      await window.electronAPI?.exitApp();
+    } catch (err) {
+      console.warn('[Room] 退出应用失败，回退到等待页:', err);
+      goHome();
+    }
+  };
+
+  roomLeaveHandler = () => {
+    void handleRoomExit('leave');
+  };
+  roomDismissHandler = () => {
+    void handleRoomExit('dismiss');
+  };
+
+  conference.on('RoomLeave', roomLeaveHandler);
+  conference.on('RoomDestroy', roomDismissHandler);
+
+  boundConference = conference;
+  hasBoundConferenceExitEvents = true;
+}
+
+function unbindConferenceExitEvents() {
+  if (!hasBoundConferenceExitEvents || !boundConference?.off) {
+    return;
+  }
+  if (roomLeaveHandler) {
+    boundConference.off('RoomLeave', roomLeaveHandler);
+  }
+  if (roomDismissHandler) {
+    boundConference.off('RoomDestroy', roomDismissHandler);
+  }
+  roomLeaveHandler = null;
+  roomDismissHandler = null;
+  boundConference = null;
+  hasBoundConferenceExitEvents = false;
 }
 
 // 从路由参数中获取会议信息
@@ -115,6 +183,7 @@ async function joinMeeting() {
 
   try {
     const conference = await getRoomKitConference();
+    bindConferenceExitEvents(conference);
 
     // 第一步: 登录
     await conference.login({
@@ -150,9 +219,11 @@ onMounted(() => {
 });
 
 onBeforeUnmount(async () => {
+  unbindConferenceExitEvents();
   // 离开页面时退出会议，释放资源
+  // 注意：如果已经走了 SDK 的退会事件（点击离开房间），这里不要重复 leave。
   try {
-    if (cachedConference) {
+    if (cachedConference && !hasHandledRoomExit) {
       await cachedConference.leave();
       await cachedConference.logout();
     }
