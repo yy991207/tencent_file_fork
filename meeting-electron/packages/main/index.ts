@@ -66,7 +66,9 @@ function createMainWindow(): void {
   });
 
   // 开发模式加载 Vite 开发服务器，生产模式加载打包后的文件
-  if (process.env.NODE_ENV === 'development') {
+  // 开发态不要只依赖 NODE_ENV，直接运行 electron . 时通常未注入该变量。
+  // !app.isPackaged 可以稳定识别“本地源码启动”场景，避免误走生产分支。
+  if (process.env.NODE_ENV === 'development' || !app.isPackaged) {
     // 开发模式下 Vite 端口可能被占用而自动递增，这里用环境变量或默认 5174
     const devPort = process.env.DEV_PORT || '5174';
     mainWindow.loadURL(`http://localhost:${devPort}`);
