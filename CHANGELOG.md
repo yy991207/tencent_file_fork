@@ -1,5 +1,34 @@
 # CHANGELOG
 
+## 2026-03-27 - Web/客户端二选一入会入口落地
+
+### 改动背景
+当前页面“点击进入”只会唤醒 Electron 客户端，缺少 Web 端和客户端二选一的明确入口；同时，之前删掉的 `/meeting` Web 承接页需要恢复，才能把 Web 入会链路完整打通。
+
+### 已完成
+- **恢复 Web 端会议承接路由** (`src/App.tsx`, `src/pages/MeetingPage/index.tsx`, `src/pages/MeetingPage/index.module.less`)
+  - 新增 `/meeting` 独立路由，不复用 `MainLayout`
+  - 新增全屏 `MeetingPage`，专门承接 `meeting-app` iframe
+  - 在 `MeetingPage` 中监听 `MEETING_READY`，下发 `CREATE_MEETING`
+  - 监听 `MEETING_ENDED / MEETING_ERROR / USER_KICKED / LOGIN_EXPIRED` 后返回首页
+
+- **扩展 React 主应用会议消息类型** (`src/utils/postMessageBridge.ts`)
+  - 增补 `CREATE_MEETING`、`JOIN_MEETING` 指令类型
+  - 增补 `MEETING_STARTED`、`MEETING_ENDED` 等回调类型
+  - 保持与 `meeting-app` 侧消息枚举对称，避免类型漂移
+
+- **研讨会“点击进入”改为二选一入口** (`src/components/MaterialView/index.tsx`, `src/components/MaterialView/index.module.less`)
+  - 新增“入会方式”卡片：`进入 Web 端` / `进入客户端`
+  - 默认选择 Web 端，可手动切换到客户端
+  - Web 端：跳转 `/meeting` 并携带会议参数
+  - 客户端：继续走现有 `launchDesktopMeeting` 唤醒逻辑
+  - 主按钮文案随选择项动态变化，和截图中的“二选一”交互一致
+
+### 验证结果
+- `git diff --check`：通过
+- `npx tsc --noEmit`：未通过，报错为仓库已有问题（`SelectPeople` 的 `.jsx/.js` 缺少类型声明、未使用变量告警）
+- `npm run build`：按用户要求不作为本轮阻塞项；此前已观察到该仓库在 `meeting-app vite build` 阶段存在历史性卡住现象
+
 ## 2026-03-27 - 研讨会无效配置项清理
 
 ### 改动背景

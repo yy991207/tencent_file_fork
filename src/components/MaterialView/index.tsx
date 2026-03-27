@@ -7,6 +7,7 @@
 declare const __MEETING_BASE_URL__: string;
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button, Checkbox, Input, message, Select, Tag, Tooltip } from 'antd';
 import {
   SettingOutlined,
@@ -23,6 +24,8 @@ import {
   MutedOutlined,
   EyeInvisibleOutlined,
   NumberOutlined,
+  GlobalOutlined,
+  DesktopOutlined,
   FileTextOutlined,
   CopyOutlined,
   LinkOutlined,
@@ -35,6 +38,7 @@ import { launchDesktopMeeting } from '@/utils/desktopLauncher';
 import styles from './index.module.less';
 
 type MaterialTab = 'settings' | 'launch' | 'details';
+type LaunchTarget = 'web' | 'desktop';
 
 interface MaterialViewProps {
   item: MaterialItem;
@@ -87,9 +91,12 @@ function formatDurationLabel(durationValue: string) {
 }
 
 const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
+  const navigate = useNavigate();
   const currentUser = useAppStore((s) => s.currentUser);
   const updateMaterialItemConfig = useAppStore((s) => s.updateMaterialItemConfig);
   const [activeTab, setActiveTab] = useState<MaterialTab>('settings');
+  // 入会方式二选一：Web 端走独立 /meeting 页面，客户端走 Electron 唤醒。
+  const [launchTarget, setLaunchTarget] = useState<LaunchTarget>('web');
   const typeLabel = '研讨会';
 
   // ===== StartOptions 参数 =====
@@ -207,6 +214,32 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
     isMicrophoneDisableForAllUser,
     isCameraDisableForAllUser,
   });
+
+  /**
+   * Web 端入会需要把当前配置压到 URL 参数里，
+   * 再交给独立的 /meeting 页面转发给腾讯会议子应用。
+   */
+  const buildMeetingLaunchSearchParams = (rid: string) => {
+    const { scheduleStartTimestamp, scheduleEndTimestamp, attendeeIds } = buildScheduleInfo();
+    const params = new URLSearchParams({
+      action: 'start',
+      roomId: rid,
+      roomType: '1',
+      roomName: roomName.trim() || `研讨会 - ${item.name}`,
+      isOpenCamera: String(isOpenCamera),
+      isOpenMicrophone: String(isOpenMicrophone),
+      isMicrophoneDisableForAllUser: String(isMicrophoneDisableForAllUser),
+      isCameraDisableForAllUser: String(isCameraDisableForAllUser),
+      scheduleStartTime: String(scheduleStartTimestamp),
+      scheduleEndTime: String(scheduleEndTimestamp),
+    });
+
+    if (attendeeIds.length > 0) {
+      params.set('scheduleAttendees', attendeeIds.join(','));
+    }
+
+    return params;
+  };
 
   const buildRoomConfigFromTencent = (
     existingConfig: MaterialRoomConfig | undefined,
@@ -352,7 +385,18 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
     }
   };
 
-  const handleStartLive = async () => {
+  const handleEnterWebMeeting = () => {
+    if (!currentUser?.id) {
+      message.error('未获取到当前用户信息');
+      return;
+    }
+
+    const rid = roomId || String(Math.floor(100000 + Math.random() * 900000));
+    const params = buildMeetingLaunchSearchParams(rid);
+    navigate(`/meeting?${params.toString()}`);
+  };
+
+  const handleEnterDesktopMeeting = async () => {
     const rid = roomId || String(Math.floor(100000 + Math.random() * 900000));
     if (!currentUser?.id) {
       message.error('未获取到当前用户信息');
@@ -372,6 +416,15 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
         message.error('启动桌面端会议失败');
       }
     }
+  };
+
+  const handleEnterMeeting = async () => {
+    if (launchTarget === 'web') {
+      handleEnterWebMeeting();
+      return;
+    }
+
+    await handleEnterDesktopMeeting();
   };
 
   const renderStatusNotice = () => {
@@ -726,6 +779,49 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
             </div>
           </div>
 
+          <div className={styles.launchSection}>
+            <div className={styles.launchSectionTitle}>入会方式</div>
+            <div className={styles.launchTargetGrid}>
+              <button
+                type="button"
+                className={`${styles.launchTargetCard} ${launchTarget === 'web' ? styles.launchTargetCardActive : ''}`}
+                onClick={() => setLaunchTarget('web')}
+              >
+                <span className={styles.launchTargetIconWrap}>
+                  <GlobalOutlined className={styles.launchTargetIcon} />
+                </span>
+                <span className={styles.launchTargetContent}>
+                  <span className={styles.launchTargetHeader}>
+                    <span className={styles.launchTargetTitle}>进入 Web 端</span>
+                    {launchTarget === 'web' && <CheckCircleFilled className={styles.launchTargetChecked} />}
+                  </span>
+                  <span className={styles.launchTargetDescription}>
+                    直接在浏览器里进入腾讯会议，适合快速联调和未安装客户端的场景。
+                  </span>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                className={`${styles.launchTargetCard} ${launchTarget === 'desktop' ? styles.launchTargetCardActive : ''}`}
+                onClick={() => setLaunchTarget('desktop')}
+              >
+                <span className={styles.launchTargetIconWrap}>
+                  <DesktopOutlined className={styles.launchTargetIcon} />
+                </span>
+                <span className={styles.launchTargetContent}>
+                  <span className={styles.launchTargetHeader}>
+                    <span className={styles.launchTargetTitle}>进入客户端</span>
+                    {launchTarget === 'desktop' && <CheckCircleFilled className={styles.launchTargetChecked} />}
+                  </span>
+                  <span className={styles.launchTargetDescription}>
+                    优先唤起 Electron 会议端，适合需要本地能力和客户端体验的场景。
+                  </span>
+                </span>
+              </button>
+            </div>
+          </div>
+
           {/* ── 操作按钮 ── */}
           <div className={styles.launchActions}>
             <Button
@@ -733,10 +829,10 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
               size="large"
               className={styles.launchEnterBtn}
               icon={<LoginOutlined />}
-              onClick={handleStartLive}
+              onClick={() => void handleEnterMeeting()}
               disabled={!saved}
             >
-              点击进入
+              {launchTarget === 'web' ? '进入 Web 端' : '进入客户端'}
             </Button>
             <Button size="large" onClick={() => setActiveTab('settings')}>
               返回设置

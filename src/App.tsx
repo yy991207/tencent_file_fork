@@ -7,11 +7,14 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import HomePage from './pages/HomePage';
 import DocumentEditPage from './pages/DocumentEditPage';
+import MeetingPage from './pages/MeetingPage';
 
 const App: React.FC = () => {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Web 端会议页面 - 全屏承接腾讯会议子应用，不复用主布局 */}
+        <Route path="/meeting" element={<MeetingPage />} />
         {/* 主布局路由，所有页面共享相同的布局结构 */}
         <Route path="/" element={<MainLayout />}>
           {/* 首页 - 包含收起、展开、目录树三种状态，通过动画切换 */}
