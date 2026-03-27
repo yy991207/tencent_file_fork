@@ -416,7 +416,9 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
 
   const renderSettings = () => (
     <div className={styles.settingsForm}>
-      {renderStatusNotice()}
+      <div className={styles.statusNoticeWrap}>
+        {renderStatusNotice()}
+      </div>
 
       {/* roomName */}
       <div className={styles.formRow}>

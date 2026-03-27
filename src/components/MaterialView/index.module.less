@@ -131,19 +131,24 @@
 
 /* ==================== 设置表单 ==================== */
 .settingsForm {
-  --form-label-width: 100px;
-  --form-label-gap: 16px;
-  max-width: 760px;
+  --form-label-width: 90px;
+  --form-label-gap: 20px;
+  max-width: 680px;
   margin: 0 auto;
   background: var(--bg-color-white);
-  border-radius: 8px;
-  padding: 32px 40px;
+  border-radius: 12px;
+  padding: 28px 36px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.settingsForm > *:first-child {
+  text-align: center;
 }
 
 .formRow {
   display: flex;
   align-items: flex-start;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
   gap: var(--form-label-gap);
 }
 
@@ -158,13 +163,15 @@
   align-items: center;
   justify-content: flex-end;
   gap: 4px;
+  font-weight: 500;
 }
 
 .labelHelpIcon {
-  font-size: 12px;
-  color: #999;
+  font-size: 13px;
+  color: #bfbfbf;
   cursor: help;
-  margin-left: 2px;
+  margin-left: 4px;
+  transition: color 0.2s;
 
   &:hover {
     color: #1677FF;
@@ -173,14 +180,18 @@
 
 .required {
   color: #FF4D4F;
+  margin-right: 2px;
 }
 
 .formControl {
   flex: 1;
+  min-width: 0;
 }
 
 .formInput {
   width: 100%;
+  height: 32px;
+  border-radius: 6px;
 }
 
 .formSelect {
@@ -190,33 +201,35 @@
 .timeRow {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .durationRow {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .dateInput {
-  width: 130px;
+  width: 140px;
+  height: 32px;
+  border-radius: 6px;
 }
 
 .timeHourSelect {
-  width: 72px;
+  width: 68px;
 }
 
 .timeMinuteSelect {
-  width: 72px;
+  width: 68px;
 }
 
 .durationHourSelect {
-  width: 72px;
+  width: 68px;
 }
 
 .durationMinuteSelect {
-  width: 72px;
+  width: 68px;
 }
 
 .timeSeparator {
@@ -232,8 +245,8 @@
 
 .formDivider {
   height: 1px;
-  background-color: var(--border-color-light);
-  margin: 8px 0 20px calc(var(--form-label-width) + var(--form-label-gap));
+  background-color: #f0f0f0;
+  margin: 12px 0 24px calc(var(--form-label-width) + var(--form-label-gap));
 }
 
 .checkItem {
@@ -295,17 +308,22 @@
 
 .formActions {
   display: flex;
-  gap: 12px;
-  margin-top: 32px;
-  margin-left: 116px;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 28px;
+  padding-top: 8px;
 }
 
 .saveBtn {
-  min-width: 80px;
+  min-width: 100px;
+  height: 36px;
+  border-radius: 6px;
 }
 
 .cancelBtn {
-  min-width: 80px;
+  min-width: 100px;
+  height: 36px;
+  border-radius: 6px;
 }
 
 /* ==================== 详情视图（重设计） ==================== */
@@ -540,13 +558,20 @@
   margin: 0 auto;
 }
 
-.launchNotice {
+.statusNoticeWrap {
   display: flex;
-  align-items: center;
-  border-radius: 8px;
-  padding: 10px 16px;
-  font-size: 13px;
+  justify-content: center;
   margin-bottom: 16px;
+}
+
+.launchNotice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 13px;
+  width: auto;
 }
 
 .launchNoticeInfo {
@@ -786,17 +811,18 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  min-height: 32px;
-  padding: 4px 8px;
+  gap: 8px;
+  min-height: 36px;
+  padding: 6px 10px;
   border: 1px solid #d9d9d9;
   border-radius: 6px;
-  background: #fff;
+  background: #fafafa;
   cursor: text;
-  transition: border-color 0.2s;
+  transition: all 0.2s;
 
   &:hover {
     border-color: #4096ff;
+    background: #fff;
   }
 }
 
@@ -804,19 +830,24 @@
   margin: 0;
   font-size: 13px;
   border-radius: 4px;
+  padding: 2px 8px;
+  background: #e6f4ff;
+  border: 1px solid #91caff;
+  color: #1677ff;
 }
 
 .attendeesAddBtn {
   color: #1677ff;
   cursor: pointer;
-  font-size: 15px;
+  font-size: 16px;
   margin-left: auto;
-  padding: 2px 4px;
+  padding: 4px 6px;
   border-radius: 4px;
-  transition: background 0.2s;
+  transition: all 0.2s;
 
   &:hover {
     background: #e6f4ff;
+    color: #0958d9;
   }
 }
 
@@ -837,42 +868,49 @@
 
 // ── 邀请链接区块 ──────────────────────────────────
 .inviteSection {
-  margin-top: 16px;
-  padding: 12px 14px;
-  background: #f6f9ff;
-  border: 1px solid #d6e4ff;
-  border-radius: 6px;
+  margin-top: 20px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #f0f7ff 0%, #e8f4fd 100%);
+  border: 1px solid #bae0ff;
+  border-radius: 8px;
 }
 
 .inviteSectionHeader {
   display: flex;
   align-items: center;
-  font-size: 13px;
-  font-weight: 500;
-  color: #333;
-  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a2336;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #d6e4ff;
 }
 
 .inviteList {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .inviteItem {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
+  gap: 10px;
+  padding: 8px 12px;
   background: #fff;
   border: 1px solid #e8e8e8;
-  border-radius: 4px;
-  font-size: 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  transition: box-shadow 0.2s;
+
+  &:hover {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  }
 }
 
 .inviteName {
   flex-shrink: 0;
-  width: 64px;
+  width: 72px;
   font-weight: 500;
   color: #333;
   overflow: hidden;
@@ -886,12 +924,16 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family: monospace;
-  font-size: 11px;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+  font-size: 12px;
+  background: #f6f8fa;
+  padding: 4px 8px;
+  border-radius: 4px;
 }
 
 .inviteCopyBtn {
   flex-shrink: 0;
-  color: #666;
+  color: #8c8c8c;
+  transition: color 0.2s;
   &:hover { color: #1677ff; }
 }
