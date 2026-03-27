@@ -148,6 +148,21 @@ export default function SelectPeopleModal({ open, bizId, onConfirm, onCancel }: 
     return [...selectedUserIds].map((id) => (data as any).userMap.get(id)).filter(Boolean);
   }, [data, selectedUserIds]);
 
+  const expandedSelectedUserList = useMemo(() => {
+    if (!data) return selectedUserList;
+
+    // 如果用户勾选了部门，这里展开成部门下的具体成员，再交给上层保存。
+    const mergedUsers = new Map(selectedUserList.map((user) => [user.id, user]));
+    selectedUsersByDept.forEach((userId) => {
+      const user = (data as any).userMap.get(userId);
+      if (user) {
+        mergedUsers.set(user.id, user);
+      }
+    });
+
+    return [...mergedUsers.values()];
+  }, [data, selectedUserList, selectedUsersByDept]);
+
   const resetPath = useCallback(() => { setPath([]); setQuery(''); setVisibleCount(INITIAL_PAGE_SIZE); }, []);
 
   const handleNavigateDept = useCallback((dept: any) => {
@@ -176,7 +191,7 @@ export default function SelectPeopleModal({ open, bizId, onConfirm, onCancel }: 
   const handleLoadMore = useCallback(() => { setVisibleCount((p) => p + INITIAL_PAGE_SIZE); }, []);
 
   const handleConfirm = () => {
-    onConfirm({ users: selectedUserList as User[], depts: selectedDeptList as Dept[] });
+    onConfirm({ users: expandedSelectedUserList as User[], depts: selectedDeptList as Dept[] });
   };
 
   return (

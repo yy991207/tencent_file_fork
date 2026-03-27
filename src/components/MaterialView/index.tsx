@@ -1,29 +1,22 @@
 /**
  * 素材视图组件（研讨会）
- * 配置项与 TUIRoomKit 参数一一映射：
- *   StartOptions:  roomName, password, isOpenCamera, isOpenMicrophone,
- *                  isMicrophoneDisableForAllUser, isCameraDisableForAllUser
- *   Schedule API:  scheduleStartTime（日期+时间）, scheduleDuration, scheduleAttendees
+ * 当前页面只保留已经确认能落到腾讯预约会议里的配置项，
+ * 避免把还未接入真实链路的表单项继续展示给用户。
  */
 // 由 vite.config.ts 从 config.yaml 注入，会议邀请链接基础地址
 declare const __MEETING_BASE_URL__: string;
 
 import React, { useState, useEffect } from 'react';
-import { Button, Checkbox, Input, message, Select, Switch, Tag, Tooltip } from 'antd';
+import { Button, Checkbox, Input, message, Select, Tag } from 'antd';
 import {
   SettingOutlined,
   LoginOutlined,
   ProfileOutlined,
-  PrinterOutlined,
-  ExportOutlined,
   TeamOutlined,
   ClockCircleOutlined,
   VideoCameraOutlined,
-  LockOutlined,
-  AudioOutlined,
   InfoCircleOutlined,
   CalendarOutlined,
-  GlobalOutlined,
   UserOutlined,
   MutedOutlined,
   EyeInvisibleOutlined,
@@ -46,27 +39,26 @@ interface MaterialViewProps {
   onNameChange?: (id: string, newName: string) => void;
 }
 
-// 每 30 分钟一档的时间选项
-const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
-  const h = String(Math.floor(i / 2)).padStart(2, '0');
-  const m = i % 2 === 0 ? '00' : '30';
-  return { value: `${h}:${m}`, label: `${h}:${m}` };
-});
+const START_HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => ({
+  value: String(i).padStart(2, '0'),
+  label: String(i).padStart(2, '0'),
+}));
 
-const DURATION_OPTIONS = [
-  { value: '1800',  label: '30 分钟' },
-  { value: '3600',  label: '1 小时'  },
-  { value: '5400',  label: '1.5 小时' },
-  { value: '7200',  label: '2 小时'  },
-  { value: '10800', label: '3 小时'  },
-];
+const START_MINUTE_OPTIONS = Array.from({ length: 60 }, (_, i) => ({
+  value: String(i).padStart(2, '0'),
+  label: String(i).padStart(2, '0'),
+}));
 
-const TIMEZONE_OPTIONS = [
-  { value: 'UTC+08:00', label: 'UTC+08:00（北京）'   },
-  { value: 'UTC+09:00', label: 'UTC+09:00（东京）'   },
-  { value: 'UTC+00:00', label: 'UTC+00:00（伦敦）'   },
-  { value: 'UTC-05:00', label: 'UTC-05:00（纽约）'   },
-  { value: 'UTC-08:00', label: 'UTC-08:00（洛杉矶）' },
+const DURATION_HOUR_OPTIONS = Array.from({ length: 25 }, (_, i) => ({
+  value: i,
+  label: String(i),
+}));
+
+const DURATION_MINUTE_OPTIONS = [
+  { value: 0, label: '00' },
+  { value: 15, label: '15' },
+  { value: 30, label: '30' },
+  { value: 45, label: '45' },
 ];
 
 function todayStr() {
@@ -82,6 +74,16 @@ function formatTimeStr(date: Date) {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
+function formatDurationLabel(durationValue: string) {
+  const totalMinutes = Math.max(15, Math.floor((parseInt(durationValue, 10) || 1800) / 60));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (hours === 0) return `${minutes} 分钟`;
+  if (minutes === 0) return `${hours} 小时`;
+  return `${hours} 小时 ${minutes} 分钟`;
+}
+
 const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
   const currentUser = useAppStore((s) => s.currentUser);
   const updateMaterialItemConfig = useAppStore((s) => s.updateMaterialItemConfig);
@@ -94,10 +96,6 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
   const [isOpenMicrophone, setIsOpenMicrophone] = useState(true);
   const [isMicrophoneDisableForAllUser, setIsMicrophoneDisableForAllUser] = useState(false);
   const [isCameraDisableForAllUser, setIsCameraDisableForAllUser] = useState(false);
-
-  // ===== 安全设置：password =====
-  const [passwordEnabled, setPasswordEnabled] = useState(false);
-  const [password, setPassword] = useState('');
 
   // ===== Schedule API 参数 =====
   const [startDate, setStartDate] = useState(todayStr);
@@ -112,6 +110,37 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
   const [savingToTencent, setSavingToTencent] = useState(false);
   const [syncingTencentConfig, setSyncingTencentConfig] = useState(false);
   const [tencentConfirmed, setTencentConfirmed] = useState(false);
+  const shouldLockMemberManageConfig = Boolean(roomId);
+  const [startHour = '16', startMinute = '00'] = startTime.split(':');
+  const durationTotalMinutes = Math.max(15, Math.floor((parseInt(duration, 10) || 1800) / 60));
+  const durationHours = Math.floor(durationTotalMinutes / 60);
+  const durationMinutes = durationTotalMinutes % 60;
+  const durationMinuteOptions = DURATION_MINUTE_OPTIONS.map((option) => ({
+    ...option,
+    disabled: (durationHours === 0 && option.value === 0) || (durationHours === 24 && option.value !== 0),
+  }));
+
+  const updateDurationValue = (nextHours: number, nextMinutes: number) => {
+    const normalizedMinutes = nextHours === 24 ? 0 : nextMinutes;
+    const totalMinutes = (nextHours * 60) + normalizedMinutes;
+    const safeTotalMinutes = Math.min(24 * 60, Math.max(15, totalMinutes));
+    setDuration(String(safeTotalMinutes * 60));
+  };
+
+  const handleDurationHourChange = (nextHours: number) => {
+    const nextMinutes = nextHours === 24
+      ? 0
+      : (nextHours === 0 && durationMinutes === 0 ? 15 : durationMinutes);
+    updateDurationValue(nextHours, nextMinutes);
+  };
+
+  const handleDurationMinuteChange = (nextMinutes: number) => {
+    updateDurationValue(durationHours, nextMinutes);
+  };
+
+  const updateStartTimeValue = (nextHour: string, nextMinute: string) => {
+    setStartTime(`${nextHour}:${nextMinute}`);
+  };
 
   const resetFormState = () => {
     setRoomName('');
@@ -119,8 +148,6 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
     setIsOpenMicrophone(true);
     setIsMicrophoneDisableForAllUser(false);
     setIsCameraDisableForAllUser(false);
-    setPasswordEnabled(false);
-    setPassword('');
     setStartDate(todayStr());
     setStartTime('16:00');
     setDuration('1800');
@@ -145,8 +172,6 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
     if (cfg.duration) setDuration(cfg.duration);
     if (cfg.timezone) setTimezone(cfg.timezone);
     if (cfg.attendees) setSelectedAttendeeObjects(cfg.attendees);
-    if (cfg.passwordEnabled !== undefined) setPasswordEnabled(cfg.passwordEnabled);
-    if (cfg.password !== undefined) setPassword(cfg.password);
     if (cfg.isOpenCamera !== undefined) setIsOpenCamera(cfg.isOpenCamera);
     if (cfg.isOpenMicrophone !== undefined) setIsOpenMicrophone(cfg.isOpenMicrophone);
     if (cfg.isMicrophoneDisableForAllUser !== undefined) setIsMicrophoneDisableForAllUser(cfg.isMicrophoneDisableForAllUser);
@@ -173,8 +198,6 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
     duration,
     timezone,
     attendees: selectedAttendeeObjects,
-    passwordEnabled,
-    password,
     isOpenCamera,
     isOpenMicrophone,
     isMicrophoneDisableForAllUser,
@@ -205,8 +228,6 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
         id: attendeeId,
         name: attendeeNameMap.get(attendeeId) ?? attendeeId,
       })),
-      passwordEnabled: payload.password ? true : existingConfig?.passwordEnabled ?? false,
-      password: payload.password ?? existingConfig?.password ?? '',
       isOpenCamera: existingConfig?.isOpenCamera ?? true,
       isOpenMicrophone: existingConfig?.isOpenMicrophone ?? true,
       isMicrophoneDisableForAllUser: payload.isAllMicrophoneDisabled ?? existingConfig?.isMicrophoneDisableForAllUser ?? false,
@@ -289,7 +310,6 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
         userId: currentUser.id,
         roomId: rid,
         roomName: roomName.trim() || `研讨会 - ${item.name}`,
-        password: passwordEnabled && password.trim() ? password.trim() : undefined,
         scheduleStartTime: scheduleStartTimestamp,
         scheduleEndTime: scheduleEndTimestamp,
         scheduleAttendees: attendeeIds.length > 0 ? attendeeIds : undefined,
@@ -334,7 +354,7 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
       {/* roomName */}
       <div className={styles.formRow}>
         <label className={styles.formLabel}>
-          房间名称 <span className={styles.required}>*</span>
+          <span className={styles.required}>*</span> 房间名称
         </label>
         <div className={styles.formControl}>
           <Input
@@ -342,16 +362,15 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
             onChange={(e) => setRoomName(e.target.value)}
             className={styles.formInput}
             placeholder={`请输入${typeLabel}主题`}
+            maxLength={20}
           />
+          <div className={styles.formNotice}>说明：房间名称最多 20 字。</div>
         </div>
       </div>
 
       {/* scheduleStartTime */}
       <div className={styles.formRow}>
-        <label className={styles.formLabel}>
-          <CalendarOutlined style={{ marginRight: 4 }} />
-          开始时间
-        </label>
+        <label className={styles.formLabel}>开始时间</label>
         <div className={styles.formControl}>
           <div className={styles.timeRow}>
             <Input
@@ -361,54 +380,57 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
               className={styles.dateInput}
             />
             <Select
-              value={startTime}
-              onChange={setStartTime}
-              options={TIME_OPTIONS}
-              className={styles.timeSelect}
+              value={startHour}
+              onChange={(nextHour) => updateStartTimeValue(nextHour, startMinute)}
+              options={START_HOUR_OPTIONS}
+              className={styles.timeHourSelect}
               popupMatchSelectWidth={false}
             />
+            <span className={styles.timeUnit}>时</span>
+            <Select
+              value={startMinute}
+              onChange={(nextMinute) => updateStartTimeValue(startHour, nextMinute)}
+              options={START_MINUTE_OPTIONS}
+              className={styles.timeMinuteSelect}
+              popupMatchSelectWidth={false}
+            />
+            <span className={styles.timeUnit}>分</span>
           </div>
         </div>
       </div>
 
       {/* scheduleDuration */}
       <div className={styles.formRow}>
-        <label className={styles.formLabel}>
-          <ClockCircleOutlined style={{ marginRight: 4 }} />
-          会议时长
-        </label>
+        <label className={styles.formLabel}>会议时长</label>
         <div className={styles.formControl}>
-          <Select
-            value={duration}
-            onChange={setDuration}
-            options={DURATION_OPTIONS}
-            className={styles.formSelect}
-          />
+          <div className={styles.durationRow}>
+            <Select
+              value={durationHours}
+              onChange={handleDurationHourChange}
+              options={DURATION_HOUR_OPTIONS}
+              className={styles.durationHourSelect}
+              popupMatchSelectWidth={false}
+            />
+            <span className={styles.timeUnit}>时</span>
+            <Select
+              value={durationMinutes}
+              onChange={handleDurationMinuteChange}
+              options={durationMinuteOptions}
+              className={styles.durationMinuteSelect}
+              popupMatchSelectWidth={false}
+            />
+            <span className={styles.timeUnit}>分</span>
+          </div>
         </div>
       </div>
 
-      {/* timezone */}
-      <div className={styles.formRow}>
-        <label className={styles.formLabel}>
-          <GlobalOutlined style={{ marginRight: 4 }} />
-          时区
-        </label>
-        <div className={styles.formControl}>
-          <Select
-            value={timezone}
-            onChange={setTimezone}
-            options={TIMEZONE_OPTIONS}
-            className={styles.formSelect}
-          />
-        </div>
+      <div className={styles.formNoticeBlock}>
+        说明：开始时间必须晚于当前时间；会议时长至少 15 分钟，最长 24 小时。
       </div>
 
       {/* scheduleAttendees */}
       <div className={styles.formRow}>
-        <label className={styles.formLabel}>
-          <UserOutlined style={{ marginRight: 4 }} />
-          参会成员
-        </label>
+        <label className={styles.formLabel}>参会成员</label>
         <div className={styles.formControl}>
           <div className={styles.attendeesBox}>
             {selectedAttendeeObjects.map((u) => (
@@ -435,10 +457,10 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
         open={selectPeopleOpen}
         bizId={item.bizId ?? ''}
         onCancel={() => setSelectPeopleOpen(false)}
-        onConfirm={({ users, depts }) => {
-          // 合并已有 + 新选，去重
+        onConfirm={({ users }) => {
+          // 这里只保留用户实体，避免把部门 ID 当成腾讯参会人 userId 传出去。
           const merged = [...selectedAttendeeObjects];
-          [...users, ...depts].forEach((p) => {
+          users.forEach((p) => {
             if (!merged.find((m) => m.id === p.id)) merged.push(p);
           });
           setSelectedAttendeeObjects(merged);
@@ -448,89 +470,39 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
 
       <div className={styles.formDivider} />
 
-      {/* 安全设置 → password */}
+      {/* 成员管理 → isMicrophoneDisableForAllUser / isCameraDisableForAllUser */}
       <div className={styles.formRow}>
-        <label className={styles.formLabel}>
-          <LockOutlined style={{ marginRight: 4 }} />
-          安全设置
-        </label>
+        <label className={styles.formLabel}>成员管理</label>
         <div className={styles.formControl}>
-          <div className={styles.checkItem}>
-            <Checkbox
-              checked={passwordEnabled}
-              onChange={(e) => {
-                setPasswordEnabled(e.target.checked);
-                if (!e.target.checked) setPassword('');
-              }}
-            >
-              房间密码
-            </Checkbox>
+          <div className={styles.checkRow}>
+            <div className={styles.checkItem}>
+              <Checkbox
+                checked={isMicrophoneDisableForAllUser}
+                disabled={shouldLockMemberManageConfig}
+                onChange={(e) => setIsMicrophoneDisableForAllUser(e.target.checked)}
+              >
+                全体静音
+              </Checkbox>
+            </div>
+            <div className={styles.checkItem}>
+              <Checkbox
+                checked={isCameraDisableForAllUser}
+                disabled={shouldLockMemberManageConfig}
+                onChange={(e) => setIsCameraDisableForAllUser(e.target.checked)}
+              >
+                全体静画
+              </Checkbox>
+            </div>
           </div>
-          {passwordEnabled && (
-            <div className={styles.subOptions}>
-              <Input.Password
-                placeholder="请输入密码"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={styles.formInput}
-                maxLength={20}
-              />
+          {shouldLockMemberManageConfig && (
+            <div className={styles.formNotice}>
+              说明：该配置仅新建会议时生效，修改需重建会议。
             </div>
           )}
         </div>
       </div>
 
-      {/* 成员管理 → isMicrophoneDisableForAllUser / isCameraDisableForAllUser */}
-      <div className={styles.formRow}>
-        <label className={styles.formLabel}>成员管理</label>
-        <div className={styles.formControl}>
-          <div className={styles.checkItem}>
-            <Checkbox
-              checked={isMicrophoneDisableForAllUser}
-              onChange={(e) => setIsMicrophoneDisableForAllUser(e.target.checked)}
-            >
-              全体静音
-            </Checkbox>
-          </div>
-          <div className={styles.checkItem}>
-            <Checkbox
-              checked={isCameraDisableForAllUser}
-              onChange={(e) => setIsCameraDisableForAllUser(e.target.checked)}
-            >
-              全体静画
-            </Checkbox>
-          </div>
-        </div>
-      </div>
-
       <div className={styles.formDivider} />
-
-      {/* isOpenCamera */}
-      <div className={styles.formRow}>
-        <label className={styles.formLabel}>
-          开启摄像头
-          <Tooltip title="进入会议时是否默认开启摄像头">
-            <InfoCircleOutlined className={styles.infoIcon} />
-          </Tooltip>
-        </label>
-        <div className={styles.formControl}>
-          <Switch checked={isOpenCamera} onChange={setIsOpenCamera} />
-        </div>
-      </div>
-
-      {/* isOpenMicrophone */}
-      <div className={styles.formRow}>
-        <label className={styles.formLabel}>
-          <AudioOutlined style={{ marginRight: 4 }} />
-          开启麦克风
-          <Tooltip title="进入会议时是否默认开启麦克风">
-            <InfoCircleOutlined className={styles.infoIcon} />
-          </Tooltip>
-        </label>
-        <div className={styles.formControl}>
-          <Switch checked={isOpenMicrophone} onChange={setIsOpenMicrophone} />
-        </div>
-      </div>
 
       <div className={styles.formActions}>
         <Button
@@ -600,8 +572,7 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
   );
 
   const renderLaunch = () => {
-    const durationLabel = DURATION_OPTIONS.find(o => o.value === duration)?.label ?? '';
-    const tzLabel = TIMEZONE_OPTIONS.find(o => o.value === timezone)?.label ?? timezone;
+    const durationLabel = formatDurationLabel(duration);
 
     return (
       <div className={styles.launchView}>
@@ -637,7 +608,7 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
               <div className={styles.launchInfoRow}>
                 <CalendarOutlined className={styles.launchInfoIcon} />
                 <span className={styles.launchInfoLabel}>开始时间</span>
-                <span className={styles.launchInfoValue}>{startDate} {startTime} <span className={styles.launchTz}>{tzLabel}</span></span>
+                <span className={styles.launchInfoValue}>{startDate} {startTime}</span>
               </div>
               <div className={styles.launchInfoRow}>
                 <ClockCircleOutlined className={styles.launchInfoIcon} />
@@ -656,37 +627,13 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
                   }
                 </span>
               </div>
-              <div className={styles.launchInfoRow}>
-                <LockOutlined className={styles.launchInfoIcon} />
-                <span className={styles.launchInfoLabel}>入会密码</span>
-                <span className={styles.launchInfoValue}>
-                  {passwordEnabled && password
-                    ? <><span className={styles.dotOn} />已设置</>
-                    : <><span className={styles.dotOff} />无需密码</>
-                  }
-                </span>
-              </div>
             </div>
           </div>
 
-          {/* ── 设备设置 ── */}
+          {/* ── 成员管理 ── */}
           <div className={styles.launchSection}>
-            <div className={styles.launchSectionTitle}>设备设置</div>
+            <div className={styles.launchSectionTitle}>成员管理</div>
             <div className={styles.launchDeviceGrid}>
-              <div className={styles.launchDeviceItem}>
-                <VideoCameraOutlined className={styles.launchDeviceIcon} />
-                <span className={styles.launchDeviceName}>摄像头</span>
-                <span className={isOpenCamera ? styles.statusOn : styles.statusOff}>
-                  {isOpenCamera ? '入会开启' : '入会关闭'}
-                </span>
-              </div>
-              <div className={styles.launchDeviceItem}>
-                <AudioOutlined className={styles.launchDeviceIcon} />
-                <span className={styles.launchDeviceName}>麦克风</span>
-                <span className={isOpenMicrophone ? styles.statusOn : styles.statusOff}>
-                  {isOpenMicrophone ? '入会开启' : '入会关闭'}
-                </span>
-              </div>
               <div className={styles.launchDeviceItem}>
                 <MutedOutlined className={styles.launchDeviceIcon} />
                 <span className={styles.launchDeviceName}>全体静音</span>
@@ -740,7 +687,7 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
     const dateObj = new Date(startDate);
     const weekday = WEEKDAYS[dateObj.getDay()];
     const displayDate = formatDate(startDate);
-    const durationLabel = DURATION_OPTIONS.find(o => o.value === duration)?.label ?? '';
+    const durationLabel = formatDurationLabel(duration);
     // 用房间名生成伪 ID（演示用）
     const fakeId = [3, 3, 3].map((_, i) =>
       String(Math.abs(roomName.split('').reduce((a, c) => a + c.charCodeAt(0), i * 137)) % 1000).padStart(3, '0')

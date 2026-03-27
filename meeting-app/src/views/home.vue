@@ -37,12 +37,74 @@ const leftRoom = !isEmbedded && route.query.from === 'room';
 
 const router = useRouter();
 const { login } = useLoginState();
-const { scheduleRoom, updateScheduledRoom, cancelScheduledRoom, getScheduledRoomList } = useRoomState();
+const {
+  scheduleRoom,
+  updateScheduledRoom,
+  cancelScheduledRoom,
+  getScheduledRoomList,
+  getScheduledAttendees,
+  addScheduledAttendees,
+  removeScheduledAttendees,
+  updateRoomInfo,
+  getRoomInfo,
+} = useRoomState();
 
 // 当前 iframe 会话是否已完成 SDK 登录（localStorage 有数据不代表 SDK 已登录）
 let sessionLoggedIn = false;
 
 const { setMicrophonePreference, setCameraPreference } = useMediaPreference();
+
+function normalizeAttendeeIds(attendees?: string[]): string[] {
+  return [...new Set((attendees ?? []).filter(Boolean))];
+}
+
+/**
+ * 腾讯把预约参会人做成了独立分页接口，这里统一拉全，避免只取到第一页数据。
+ */
+async function fetchAllScheduledAttendeeIds(roomId: string): Promise<string[]> {
+  let cursor = '0';
+  const attendeeIds: string[] = [];
+
+  do {
+    const result = await getScheduledAttendees({ roomId, cursor });
+    attendeeIds.push(...result.attendees.map(user => user.userId).filter(Boolean));
+    cursor = result.cursor;
+  } while (cursor !== '');
+
+  return [...new Set(attendeeIds)];
+}
+
+/**
+ * 已有预约房间再次保存时，时间和名称走 update 接口；
+ * 密码和参会人要额外补独立接口，否则腾讯侧不会真正更新。
+ */
+async function syncScheduledRoomExtraConfig(
+  roomId: string,
+  options: { password?: string; scheduleAttendees?: string[] },
+): Promise<void> {
+  const nextPassword = options.password ?? '';
+  const nextAttendeeIds = normalizeAttendeeIds(options.scheduleAttendees);
+  const roomInfo = await getRoomInfo({ roomId });
+
+  if ((roomInfo.password ?? '') !== nextPassword) {
+    await updateRoomInfo({
+      roomId,
+      options: { password: nextPassword },
+    });
+  }
+
+  const currentAttendeeIds = await fetchAllScheduledAttendeeIds(roomId);
+  const attendeesToAdd = nextAttendeeIds.filter(userId => !currentAttendeeIds.includes(userId));
+  const attendeesToRemove = currentAttendeeIds.filter(userId => !nextAttendeeIds.includes(userId));
+
+  if (attendeesToAdd.length > 0) {
+    await addScheduledAttendees({ roomId, userIdList: attendeesToAdd });
+  }
+
+  if (attendeesToRemove.length > 0) {
+    await removeScheduledAttendees({ roomId, userIdList: attendeesToRemove });
+  }
+}
 
 const handleCameraPreferenceChange = (isOpen: boolean) => {
   setCameraPreference(isOpen);
@@ -148,6 +210,7 @@ onMounted(() => {
           console.info('[Meeting] 房间已存在，尝试 updateScheduledRoom', data.roomId);
           try {
             await updateScheduledRoom({ roomId: data.roomId, options: roomOptions });
+            await syncScheduledRoomExtraConfig(data.roomId, roomOptions);
           } catch (updateError: any) {
             const updateCode = updateError?.errorCode ?? updateError?.code;
             if (updateCode === 100006) {
@@ -190,25 +253,28 @@ onMounted(() => {
       let found = false;
       do {
         const result = await getScheduledRoomList({ cursor });
-        // [临时日志] 查看腾讯返回的完整数据，确认后删除
-        console.log('[DEBUG] getScheduledRoomList 完整返回:', JSON.stringify(result, null, 2));
         const room = result.scheduledRoomList.find(r => r.roomId === data.roomId);
         if (room) {
-          // [临时日志] 查看匹配到的房间完整字段，确认后删除
-          console.log('[DEBUG] 匹配到的 room 对象:', JSON.stringify(room, null, 2));
+          const [roomInfo, attendeeIds] = await Promise.all([
+            getRoomInfo({ roomId: data.roomId }),
+            fetchAllScheduledAttendeeIds(data.roomId),
+          ]);
           found = true;
-          notifyParent(ToParentEvent.SCHEDULED_ROOM_CONFIG, {
+          const payload = {
             requestId: data.requestId,
             roomId: data.roomId,
             roomName: room.roomName,
             found: true,
-            password: room.password,
+            password: roomInfo.password ?? room.password,
             scheduleStartTime: room.scheduledStartTime,
             scheduleEndTime: room.scheduledEndTime,
-            scheduleAttendees: room.scheduleAttendees?.map(u => u.userId),
-            isAllMicrophoneDisabled: room.isAllMicrophoneDisabled,
-            isAllCameraDisabled: room.isAllCameraDisabled,
-          });
+            scheduleAttendees: attendeeIds,
+            isAllMicrophoneDisabled: roomInfo.isAllMicrophoneDisabled ?? room.isAllMicrophoneDisabled,
+            isAllCameraDisabled: roomInfo.isAllCameraDisabled ?? room.isAllCameraDisabled,
+          };
+          // [DEBUG] 查看最终回传给 React 的数据结构
+          console.log('[DEBUG] SCHEDULED_ROOM_CONFIG 回传 payload:', JSON.stringify(payload, null, 2));
+          notifyParent(ToParentEvent.SCHEDULED_ROOM_CONFIG, payload);
           break;
         }
         cursor = result.cursor;
