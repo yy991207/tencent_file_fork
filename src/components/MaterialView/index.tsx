@@ -7,9 +7,11 @@
 declare const __MEETING_BASE_URL__: string;
 
 import React, { useState, useEffect } from 'react';
-import { Button, Checkbox, Input, message, Select, Tag } from 'antd';
+import { Button, Checkbox, Input, message, Select, Tag, Tooltip } from 'antd';
 import {
   SettingOutlined,
+  CheckCircleFilled,
+  ExclamationCircleFilled,
   LoginOutlined,
   ProfileOutlined,
   TeamOutlined,
@@ -110,6 +112,7 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
   const [savingToTencent, setSavingToTencent] = useState(false);
   const [syncingTencentConfig, setSyncingTencentConfig] = useState(false);
   const [tencentConfirmed, setTencentConfirmed] = useState(false);
+  const [saveStatusNotice, setSaveStatusNotice] = useState<null | { type: 'success' | 'warning'; text: string }>(null);
   const shouldLockMemberManageConfig = Boolean(roomId);
   const [startHour = '16', startMinute = '00'] = startTime.split(':');
   const durationTotalMinutes = Math.max(15, Math.floor((parseInt(duration, 10) || 1800) / 60));
@@ -156,6 +159,7 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
     setSaved(false);
     setRoomId('');
     setTencentConfirmed(false);
+    setSaveStatusNotice(null);
   };
 
   const applyRoomConfig = (cfg?: MaterialRoomConfig) => {
@@ -279,6 +283,18 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item.id]);
 
+  useEffect(() => {
+    if (!saveStatusNotice) return;
+
+    const timer = window.setTimeout(() => {
+      setSaveStatusNotice(null);
+    }, 2000);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [saveStatusNotice]);
+
   /** 生成指定成员的专属邀请链接 */
   const getInviteLink = (memberId: string) => {
     const base = __MEETING_BASE_URL__ || window.location.origin;
@@ -296,9 +312,13 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
 
     onNameChange?.(item.id, roomName.trim() || typeLabel);
     setSaved(true);
+    setSaveStatusNotice(null);
 
     if (!currentUser?.id) {
-      message.warning('本地配置已保存，但当前没有可用的 Tencent 登录用户');
+      setSaveStatusNotice({
+        type: 'warning',
+        text: '本地配置已保存，但当前没有可用的会议登录用户',
+      });
       return;
     }
 
@@ -316,11 +336,17 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
         isAllMicrophoneDisabled: isMicrophoneDisableForAllUser,
         isAllCameraDisabled: isCameraDisableForAllUser,
       });
-      message.success('本地配置已保存，并已同步到 Tencent');
       setTencentConfirmed(true);
+      setSaveStatusNotice({
+        type: 'success',
+        text: '配置已保存并同步',
+      });
     } catch (error) {
       console.error('[MaterialView] scheduleTencentMeeting failed:', error);
-      message.warning('本地配置已保存，但同步 Tencent 失败');
+      setSaveStatusNotice({
+        type: 'warning',
+        text: '本地配置已保存，但同步失败',
+      });
     } finally {
       setSavingToTencent(false);
     }
@@ -348,13 +374,57 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
     }
   };
 
+  const renderStatusNotice = () => {
+    if (savingToTencent) {
+      return (
+        <div className={`${styles.launchNotice} ${styles.launchNoticeInfo}`}>
+          <InfoCircleOutlined style={{ marginRight: 6 }} />
+          正在保存会议配置…
+        </div>
+      );
+    }
+
+    if (saveStatusNotice?.type === 'success') {
+      return (
+        <div className={`${styles.launchNotice} ${styles.launchNoticeSuccess}`}>
+          <CheckCircleFilled style={{ marginRight: 6 }} />
+          {saveStatusNotice.text}
+        </div>
+      );
+    }
+
+    if (saveStatusNotice?.type === 'warning') {
+      return (
+        <div className={`${styles.launchNotice} ${styles.launchNoticeWarning}`}>
+          <ExclamationCircleFilled style={{ marginRight: 6 }} />
+          {saveStatusNotice.text}
+        </div>
+      );
+    }
+
+    if (syncingTencentConfig) {
+      return (
+        <div className={`${styles.launchNotice} ${styles.launchNoticeInfo}`}>
+          <InfoCircleOutlined style={{ marginRight: 6 }} />
+          正在同步已预约的会议配置…
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   const renderSettings = () => (
     <div className={styles.settingsForm}>
+      {renderStatusNotice()}
 
       {/* roomName */}
       <div className={styles.formRow}>
         <label className={styles.formLabel}>
           <span className={styles.required}>*</span> 房间名称
+          <Tooltip title="房间名称最多 20 字">
+            <InfoCircleOutlined className={styles.labelHelpIcon} />
+          </Tooltip>
         </label>
         <div className={styles.formControl}>
           <Input
@@ -364,13 +434,17 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
             placeholder={`请输入${typeLabel}主题`}
             maxLength={20}
           />
-          <div className={styles.formNotice}>说明：房间名称最多 20 字。</div>
         </div>
       </div>
 
       {/* scheduleStartTime */}
       <div className={styles.formRow}>
-        <label className={styles.formLabel}>开始时间</label>
+        <label className={styles.formLabel}>
+          开始时间
+          <Tooltip title="开始时间必须晚于当前时间">
+            <InfoCircleOutlined className={styles.labelHelpIcon} />
+          </Tooltip>
+        </label>
         <div className={styles.formControl}>
           <div className={styles.timeRow}>
             <Input
@@ -401,7 +475,12 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
 
       {/* scheduleDuration */}
       <div className={styles.formRow}>
-        <label className={styles.formLabel}>会议时长</label>
+        <label className={styles.formLabel}>
+          会议时长
+          <Tooltip title="会议时长至少 15 分钟，最长 24 小时">
+            <InfoCircleOutlined className={styles.labelHelpIcon} />
+          </Tooltip>
+        </label>
         <div className={styles.formControl}>
           <div className={styles.durationRow}>
             <Select
@@ -424,13 +503,14 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
         </div>
       </div>
 
-      <div className={styles.formNoticeBlock}>
-        说明：开始时间必须晚于当前时间；会议时长至少 15 分钟，最长 24 小时。
-      </div>
-
       {/* scheduleAttendees */}
       <div className={styles.formRow}>
-        <label className={styles.formLabel}>参会成员</label>
+        <label className={styles.formLabel}>
+          参会成员
+          <Tooltip title="点击右侧图标添加参会成员，支持从组织架构中选择">
+            <InfoCircleOutlined className={styles.labelHelpIcon} />
+          </Tooltip>
+        </label>
         <div className={styles.formControl}>
           <div className={styles.attendeesBox}>
             {selectedAttendeeObjects.map((u) => (
@@ -472,7 +552,12 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
 
       {/* 成员管理 → isMicrophoneDisableForAllUser / isCameraDisableForAllUser */}
       <div className={styles.formRow}>
-        <label className={styles.formLabel}>成员管理</label>
+        <label className={styles.formLabel}>
+          成员管理
+          <Tooltip title="该配置仅新建会议时生效，修改需重建会议">
+            <InfoCircleOutlined className={styles.labelHelpIcon} />
+          </Tooltip>
+        </label>
         <div className={styles.formControl}>
           <div className={styles.checkRow}>
             <div className={styles.checkItem}>
@@ -494,11 +579,6 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
               </Checkbox>
             </div>
           </div>
-          {shouldLockMemberManageConfig && (
-            <div className={styles.formNotice}>
-              说明：该配置仅新建会议时生效，修改需重建会议。
-            </div>
-          )}
         </div>
       </div>
 
@@ -515,13 +595,6 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
         </Button>
         <Button className={styles.cancelBtn}>取消</Button>
       </div>
-
-      {syncingTencentConfig && (
-        <div className={styles.launchNotice}>
-          <InfoCircleOutlined style={{ marginRight: 6 }} />
-          正在从 Tencent 同步已预约的会议配置…
-        </div>
-      )}
 
       {/* 邀请链接 — 腾讯侧确认预约成功且有参会成员时展示 */}
       {tencentConfirmed && roomId && selectedAttendeeObjects.length > 0 && (
