@@ -45,3 +45,6 @@ pnpm-debug.log*
 # *.pen
 CLAUDE.md
 doc/工作记录 - 2026 年 0211.md
+
+# 配置文件（包含敏感信息，不提交）
+config.yaml
