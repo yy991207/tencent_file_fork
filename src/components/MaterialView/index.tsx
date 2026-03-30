@@ -35,6 +35,7 @@ import { useAppStore } from '../../store';
 import { getTencentScheduledRoomConfig, scheduleTencentMeeting } from '../../utils/tencentMeetingBridge';
 import SelectPeopleModal from '../SelectPeople';
 import { launchDesktopMeeting } from '@/utils/desktopLauncher';
+import { genTestUserSig } from '@/debug/generateTestUserSig';
 import styles from './index.module.less';
 
 type MaterialTab = 'settings' | 'launch' | 'details';
@@ -120,6 +121,8 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
   const [syncingTencentConfig, setSyncingTencentConfig] = useState(false);
   const [tencentConfirmed, setTencentConfirmed] = useState(false);
   const [saveStatusNotice, setSaveStatusNotice] = useState<null | { type: 'success' | 'warning'; text: string }>(null);
+  const [desktopInviteLinks, setDesktopInviteLinks] = useState<Record<string, string>>({});
+  const [desktopInviteError, setDesktopInviteError] = useState<string | null>(null);
   const shouldLockMemberManageConfig = Boolean(roomId);
   const [startHour = '16', startMinute = '00'] = startTime.split(':');
   const durationTotalMinutes = Math.max(15, Math.floor((parseInt(duration, 10) || 1800) / 60));
@@ -328,11 +331,65 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
     };
   }, [saveStatusNotice]);
 
-  /** 生成指定成员的专属邀请链接 */
-  const getInviteLink = (memberId: string) => {
+  /** 生成指定成员的 Web 端专属邀请链接 */
+  const getWebInviteLink = (memberId: string) => {
     const base = __MEETING_BASE_URL__ || window.location.origin;
     return `${base}/meeting-app/#/room?roomId=${roomId}&roomType=1&userId=${memberId}`;
   };
+
+  /** 生成指定成员的桌面端协议邀请链接 */
+  const buildDesktopInviteLink = async (memberId: string) => {
+    const rid = roomId;
+    if (!rid) return '';
+
+    const { sdkAppId, userId, userSig } = await genTestUserSig(memberId);
+    const searchParams = new URLSearchParams({
+      roomId: rid,
+      userId,
+      userSig,
+      sdkAppId: String(sdkAppId),
+    });
+    if (roomName.trim()) {
+      searchParams.set('roomName', roomName.trim());
+    }
+    return `tencent-meeting://join?${searchParams.toString()}`;
+  };
+
+  useEffect(() => {
+    if (!roomId || selectedAttendeeObjects.length === 0) {
+      setDesktopInviteLinks({});
+      setDesktopInviteError(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    // 邀请列表里直接给“客户端协议链接”，用户复制后可直接尝试唤起桌面端。
+    const generateDesktopInviteLinks = async () => {
+      try {
+        const linkPairs = await Promise.all(
+          selectedAttendeeObjects.map(async (attendee) => {
+            const link = await buildDesktopInviteLink(attendee.id);
+            return [attendee.id, link] as const;
+          }),
+        );
+        if (cancelled) return;
+        setDesktopInviteLinks(Object.fromEntries(linkPairs));
+        setDesktopInviteError(null);
+      } catch (error) {
+        if (cancelled) return;
+        console.error('[MaterialView] generate desktop invite links failed:', error);
+        setDesktopInviteLinks({});
+        setDesktopInviteError('客户端链接生成失败，请检查当前调试配置');
+      }
+    };
+
+    void generateDesktopInviteLinks();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [roomId, roomName, selectedAttendeeObjects]);
 
   const handleSave = async () => {
     // 首次保存时生成房间 ID，后续保存保持不变
@@ -664,32 +721,87 @@ const MaterialView: React.FC<MaterialViewProps> = ({ item, onNameChange }) => {
               style={{ marginLeft: 8 }}
               onClick={() => {
                 const all = selectedAttendeeObjects
-                  .map(u => `${u.name}：${getInviteLink(u.id)}`)
+                  .map(u => `${u.name}：${getWebInviteLink(u.id)}`)
                   .join('\n');
                 navigator.clipboard.writeText(all);
-                message.success('已复制全部邀请链接');
+                message.success('已复制全部 Web 邀请链接');
               }}
             >
-              一键复制全部
+              复制全部 Web
+            </Button>
+            <Button
+              type="link"
+              size="small"
+              icon={<CopyOutlined />}
+              disabled={Boolean(desktopInviteError) || Object.keys(desktopInviteLinks).length === 0}
+              onClick={() => {
+                const all = selectedAttendeeObjects
+                  .map((u) => `${u.name}：${desktopInviteLinks[u.id] || '生成失败'}`)
+                  .join('\n');
+                navigator.clipboard.writeText(all);
+                message.success('已复制全部客户端邀请链接');
+              }}
+            >
+              复制全部客户端
             </Button>
           </div>
+          {desktopInviteError && (
+            <div className={styles.inviteWarnText}>
+              {desktopInviteError}
+            </div>
+          )}
           <div className={styles.inviteList}>
             {selectedAttendeeObjects.map((u) => {
-              const link = getInviteLink(u.id);
+              const webLink = getWebInviteLink(u.id);
+              const desktopLink = desktopInviteLinks[u.id] || '';
               return (
                 <div key={u.id} className={styles.inviteItem}>
                   <span className={styles.inviteName}>{u.name}</span>
-                  <span className={styles.inviteLink}>{link}</span>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<CopyOutlined />}
-                    className={styles.inviteCopyBtn}
-                    onClick={() => {
-                      navigator.clipboard.writeText(link);
-                      message.success(`已复制 ${u.name} 的链接`);
-                    }}
-                  />
+                  <div className={styles.inviteLinkGroup}>
+                    <div className={styles.inviteLinkRow}>
+                      <span className={styles.inviteLinkLabel}>Web</span>
+                      <span className={styles.inviteLink}>{webLink}</span>
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<CopyOutlined />}
+                        className={styles.inviteCopyBtn}
+                        onClick={() => {
+                          navigator.clipboard.writeText(webLink);
+                          message.success(`已复制 ${u.name} 的 Web 链接`);
+                        }}
+                      />
+                    </div>
+
+                    <div className={styles.inviteLinkRow}>
+                      <span className={styles.inviteLinkLabel}>客户端</span>
+                      <span className={styles.inviteLink}>
+                        {desktopLink || '正在生成客户端协议链接...'}
+                      </span>
+                      <Button
+                        type="link"
+                        size="small"
+                        className={styles.inviteOpenBtn}
+                        disabled={!desktopLink}
+                        onClick={() => {
+                          window.location.href = desktopLink;
+                        }}
+                      >
+                        直接拉起
+                      </Button>
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<CopyOutlined />}
+                        className={styles.inviteCopyBtn}
+                        disabled={!desktopLink}
+                        onClick={() => {
+                          navigator.clipboard.writeText(desktopLink);
+                          message.success(`已复制 ${u.name} 的客户端链接`);
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
               );
             })}
